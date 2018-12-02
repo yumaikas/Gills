@@ -1,0 +1,11 @@
+Things to do:
+
+- Basic code-based html templating library. (done enough)
+- SQLite repository (done enough)
+
+- Routes
+- - Search Notes
+- - Create Note
+- - Save Note
+- - File upload
+- - Delete note
