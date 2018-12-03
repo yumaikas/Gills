@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// This is a content string,
+// This is a content string
 type Content struct {
 	Raw string
 	// If false, escape the string, if true, emit it raw
@@ -26,24 +26,37 @@ type Context struct {
 	themeName   string
 }
 
-func WithTargetAndTheme(w io.Writer, themeName string) Context {
-	return Context{0, w, themeName}
+func RenderWithTargetAndTheme(w io.Writer, themeName string, template func(Context)) (err error) {
+	defer func() {
+		val := recover()
+		if errInner, ok := val.(error); ok {
+			err = errInner
+		}
+	}()
+	err = nil
+	template(Context{0, w, themeName})
+	return
 }
-
-type Kv map[string]string
-
-// Half of me is tempted to create a tag-writing Context....
 
 func (ctx Context) startLine() {
 	for i := 0; i < ctx.indentCount; i++ {
-		ctx.w.Write([]byte("\t"))
+		_, err := ctx.w.Write([]byte("\t"))
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 func (ctx Context) endLine() {
-	ctx.w.Write([]byte("\n"))
+	_, err := ctx.w.Write([]byte("\n"))
+	if err != nil {
+		panic(err)
+	}
 }
 func (ctx Context) write(content string) {
-	ctx.w.Write([]byte(content))
+	_, err := ctx.w.Write([]byte(content))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (ctx Context) writeLine(content string) {
@@ -54,100 +67,95 @@ func (ctx Context) writeLine(content string) {
 
 func nothing(ctx Context) {}
 
-var NoAttr = make(Kv)
-
-func BasePage(inner func(Context)) func(Context) {
-	return Html(Body(inner))
+func BasePage(title string, inner ...func(Context)) func(Context) {
+	return Html(Title(Atr, Str(title)), Body(inner...))
 }
 
-func Html(inner func(Context)) func(Context) {
+func Html(inner ...func(Context)) func(Context) {
 	return func(ctx Context) {
 		ctx.writeLine("<!DOCTYPE html>")
 		ctx.writeLine("<html>")
-		inner(Context{ctx.indentCount + 1, ctx.w, ctx.themeName})
+		ctx.writeLine("<meta charset=\"utf-8\">")
+		ctx.writeTags(inner...)
 		ctx.writeLine("</html>")
 	}
 }
 
 func Str(content string) func(Context) {
 	return func(ctx Context) {
+		ctx.startLine()
 		template.HTMLEscape(ctx.w, []byte(content))
+		ctx.endLine()
 	}
 }
 
-func Body(inner func(ctx Context)) func(ctx Context) {
-	return writeTag("body", NoAttr, Tags(writeStyle, inner))
+func Body(inner ...func(ctx Context)) func(ctx Context) {
+	return writeTag("body", Atr, append([]func(Context){baseStyle}, inner...)...)
 }
 
-func Tags(inner ...func(ctx Context)) func(ctx Context) {
-	return func(ctx Context) {
-		innerCtx := Context{ctx.indentCount + 1, ctx.w, ctx.themeName}
-		for _, fn := range inner {
-			fn(innerCtx)
-		}
+func (ctx Context) indentMultiline(str string) {
+	var lines = strings.Split(strings.Trim(str, " \r\n"), "\n")
+	for _, line := range lines {
+		ctx.writeLine(strings.Trim(line, " \r\n"))
 	}
 }
 
-func (ctx Context) indentMultiline(str string) func(Context) {
-	return func(ctx Context) {
-		var lines = strings.Split(str, "\n")
-		for _, line := range lines {
-			strings.Trim(line, " \t\r\n")
-			ctx.writeLine(line)
-		}
-	}
-}
-
-func writeStyle(ctx Context) {
+var baseStyle = writeTag("style", Atr, func(ctx Context) {
 	if ctx.themeName == "AQUA" {
-		innerCtx := Context{ctx.indentCount + 2, ctx.w, ctx.themeName}
-		styleMultiline := innerCtx.indentMultiline(`
-			body {
-			    max-width: 800px;
-			    width: 80%;
-			}
-			body,input,textarea {
-			       font-family: Iosevka, monospace;
-			       background: #191e2a;
-			       color: #21EF9F;
-			}
-			a { color: aqua; }
-			a:visited { color: darkcyan; }`)
-		writeTag("style", NoAttr, styleMultiline)(ctx)
+		ctx.indentMultiline(`
+            body {
+            	max-width: 800px;
+            	width: 80%;
+            }
+            body,input,textarea {
+            	font-family: Iosevka, monospace;
+            	background: #191e2a;
+            	color: #21EF9F;
+            }
+            a { color: aqua; }
+            a:visited { color: darkcyan; }`)
+	}
+})
+
+func (ctx Context) writeAttributes(attributes AttributeChain) {
+	for _, attr := range attributes {
+		ctx.write(" " + attr.Key)
+		ctx.write("=\"")
+		if attr.Trusted {
+			ctx.write(attr.Value)
+		} else {
+			template.HTMLEscape(ctx.w, []byte(attr.Value))
+		}
+		ctx.write("\"")
 	}
 }
 
-func writeVoidTag(tagname string, attributes Kv) func(Context) {
+func writeVoidTag(tagname string, attributes AttributeChain) func(Context) {
 	return func(ctx Context) {
 		ctx.startLine()
 		ctx.write("<" + tagname)
-		for key, val := range attributes {
-			ctx.write(" " + key)
-			ctx.write("=\"")
-			ctx.write(val)
-			ctx.write("\"")
-		}
+		ctx.writeAttributes(attributes)
 		ctx.write(">")
 		ctx.endLine()
 	}
 }
 
-func writeTag(tagname string, attributes Kv, inner func(ctx Context)) func(ctx Context) {
+func (ctx Context) writeTags(inner ...func(ctx Context)) {
+	innerCtx := Context{ctx.indentCount + 1, ctx.w, ctx.themeName}
+	for _, fn := range inner {
+		fn(innerCtx)
+	}
+}
+
+func writeTag(tagname string, attributes AttributeChain, inner ...func(ctx Context)) func(ctx Context) {
 	return func(ctx Context) {
 		ctx.startLine()
 		ctx.write("<")
 		ctx.write(tagname)
-		for key, val := range attributes {
-			ctx.write(" " + key)
-			ctx.write("=\"")
-			ctx.write(val)
-			ctx.write("\"")
-		}
+		ctx.writeAttributes(attributes)
 		ctx.write(">")
 		ctx.endLine()
-
-		inner(Context{ctx.indentCount + 1, ctx.w, ctx.themeName})
-
+		ctx.writeTags(inner...)
 		ctx.writeLine("</" + tagname + ">")
 	}
 }

@@ -9,3 +9,7 @@ Things to do:
 - - Save Note
 - - File upload
 - - Delete note
+
+
+
+I need to finish putting out the recent notes section under the draft section

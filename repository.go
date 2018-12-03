@@ -7,30 +7,35 @@ import (
 )
 
 type noteDB struct {
-	Id      int64
-	Content string
-	Created int64
-	Updated int64
-	Deleted int64
+	Id      int64  `db:"Id"`
+	Content string `db:"Content"`
+	Created int64  `db:"Created"`
+	Updated int64  `db:"Updated"`
+	Deleted int64  `db:"Deleted"`
 }
 type noteHistoryDB struct {
-	Id      int64
-	NoteId  int64
-	Content string
-	Created int64
-	Updated int64
-	Deleted int64
+	Id      int64  `db:"Id"`
+	NoteId  int64  `db:"NoteId"`
+	Content string `db:"Content"`
+	Created int64  `db:"Created"`
+	Updated int64  `db:"Updated"`
+	Deleted int64  `db:"Deleted"`
 }
 
-type KV struct {
-	Key     string
-	Content string
+type Bag map[string]string
+
+func (b Bag) getOr(key, fallback string) string {
+	if value, ok := b[key]; ok {
+		return value
+	}
+	return fallback
 }
 
 var db *sqlx.DB
 
 func InitDB(path string) error {
-	db, err := sqlx.Open("sqlite3", path)
+	var err error
+	db, err = sqlx.Open("sqlite3", path)
 	if err != nil {
 		return err
 	}
@@ -59,14 +64,19 @@ func SearchNotes(searchTerms string) ([]Note, error) {
 	return retVals, nil
 }
 
-func LoadState() (map[string]string, error) {
-	var results = &[]KV{}
-	err := db.Select(results, "Select Key, Content from StateKV;")
+type KV struct {
+	Key     string `db:"Key"`
+	Content string `db:"Content"`
+}
+
+func LoadState() (Bag, error) {
+	results := []KV{}
+	err := db.Select(&results, `Select Key, Content from StateKV;`)
 	if err != nil {
 		return nil, err
 	}
 	var retVal = make(map[string]string)
-	for _, kv := range *results {
+	for _, kv := range results {
 		retVal[kv.Key] = kv.Content
 	}
 	return retVal, nil
