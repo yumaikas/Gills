@@ -1,7 +1,6 @@
 package templates
 
 import (
-	"fmt"
 	"html/template"
 	"strings"
 )
@@ -16,7 +15,6 @@ func Div(attributes AttributeChain, inner ...func(Context)) func(Context) {
 
 func Style(inner string) func(Context) {
 	return writeTag("style", Atr, func(ctx Context) {
-		fmt.Print("HEX")
 		ctx.indentMultiline(inner)
 	})
 }

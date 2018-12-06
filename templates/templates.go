@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"bytes"
 	"html/template"
 	"io"
 	"strings"
@@ -81,6 +82,17 @@ func Html(inner ...func(Context)) func(Context) {
 	}
 }
 
+func StrBr(content string) func(Context) {
+	return func(ctx Context) {
+		var buf bytes.Buffer
+		template.HTMLEscape(&buf, []byte(content))
+		ctx.startLine()
+		ctx.write(strings.Replace(buf.String(), "\n", "<br/>", -1))
+		ctx.endLine()
+
+	}
+}
+
 func Str(content string) func(Context) {
 	return func(ctx Context) {
 		ctx.startLine()
@@ -104,7 +116,7 @@ var baseStyle = writeTag("style", Atr, func(ctx Context) {
 	if ctx.themeName == "AQUA" {
 		ctx.indentMultiline(`
             body {
-            	max-width: 800px;
+            	max-width: 1200px;
             	width: 80%;
             }
             body,input,textarea {
@@ -113,7 +125,13 @@ var baseStyle = writeTag("style", Atr, func(ctx Context) {
             	color: #21EF9F;
             }
             a { color: aqua; }
-            a:visited { color: darkcyan; }`)
+            a:visited { color: darkcyan; }
+            .note-card {
+            	border-top: solid 1px #21EF9F; 
+	        	margin-top: 5px;
+	        	padding-top: 5px;
+            }
+            `)
 	}
 })
 

@@ -18,7 +18,8 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	// TODO: Customize the Recoverer to show a custom 500 page that has the same style as the rest of the app.
+	r.Use(Recoverer)
 
 	Route(r)
 	err = http.ListenAndServe(":3000", r)

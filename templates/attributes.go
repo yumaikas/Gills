@@ -31,8 +31,41 @@ func (attrs AttributeChain) Class(class string) AttributeChain {
 func (attrs AttributeChain) For(_for string) AttributeChain {
 	return attrs.Add("for", _for)
 }
+
 func (attrs AttributeChain) Name(name string) AttributeChain {
 	return attrs.Add("name", name)
+}
+
+func (attrs AttributeChain) Cols(name string) AttributeChain {
+	return attrs.Add("cols", name)
+}
+
+func (attrs AttributeChain) Rows(name string) AttributeChain {
+	return attrs.Add("rows", name)
+}
+
+func (attrs AttributeChain) Size(name string) AttributeChain {
+	return attrs.Add("size", name)
+}
+
+func (attrs AttributeChain) FormMethod(name string) AttributeChain {
+	return attrs.Add("formmethod", name)
+}
+
+func (attrs AttributeChain) FormAction(name string) AttributeChain {
+	return attrs.Add("formaction", name)
+}
+
+func (attrs AttributeChain) Form(name string) AttributeChain {
+	return attrs.Add("form", name)
+}
+
+func (attrs AttributeChain) Method(name string) AttributeChain {
+	return attrs.Add("method", name)
+}
+
+func (attrs AttributeChain) Action(name string) AttributeChain {
+	return attrs.Add("action", name)
 }
 
 func (attrs AttributeChain) Href(href string) AttributeChain {

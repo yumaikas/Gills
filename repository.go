@@ -1,17 +1,19 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"time"
 )
 
 type noteDB struct {
-	Id      int64  `db:"Id"`
-	Content string `db:"Content"`
-	Created int64  `db:"Created"`
-	Updated int64  `db:"Updated"`
-	Deleted int64  `db:"Deleted"`
+	Id      int64         `db:"Id"`
+	Content string        `db:"Content"`
+	Created sql.NullInt64 `db:"Created"`
+	Updated sql.NullInt64 `db:"Updated"`
+	Deleted sql.NullInt64 `db:"Deleted"`
 }
 type noteHistoryDB struct {
 	Id      int64  `db:"Id"`
@@ -41,6 +43,29 @@ func InitDB(path string) error {
 	}
 	return buildSchema(db)
 }
+func SearchRecentNotes(searchTerms string) ([]Note, error) {
+	notes := &[]noteDB{}
+	err := sqlx.Select(db, notes, `
+		Select NoteId as Id, Content, Created, Updated 
+		from Notes where Content like '%' || ? || '%'  
+		order by Created DESC
+		`, searchTerms)
+	if err != nil {
+		return nil, err
+	}
+	retVals := make([]Note, len(*notes))
+	for idx, note := range *notes {
+		retVals[idx] = Note{
+			Id:      note.Id,
+			Content: note.Content,
+			// I don't care if these are null for now.
+			Created: time.Unix(note.Created.Int64, 0),
+			Updated: time.Unix(note.Updated.Int64, 0),
+		}
+	}
+	fmt.Println("Search returned", len(retVals), "notes")
+	return retVals, nil
+}
 
 // Assumes an open DB connection
 func SearchNotes(searchTerms string) ([]Note, error) {
@@ -57,10 +82,12 @@ func SearchNotes(searchTerms string) ([]Note, error) {
 		retVals[idx] = Note{
 			Id:      note.Id,
 			Content: note.Content,
-			Created: time.Unix(note.Created, 0),
-			Updated: time.Unix(note.Updated, 0),
+			// I don't care if these are null for now.
+			Created: time.Unix(note.Created.Int64, 0),
+			Updated: time.Unix(note.Updated.Int64, 0),
 		}
 	}
+	fmt.Println("Search returned", len(retVals), "notes")
 	return retVals, nil
 }
 
@@ -85,23 +112,25 @@ func LoadState() (Bag, error) {
 func SaveState(state []KV) error {
 	tx := db.MustBegin()
 	defer tx.Rollback()
-	tx.MustExec("Delete from StateKV")
+	tx.MustExec("Delete from StateKV;")
 	for _, kv := range state {
 		tx.MustExec(`
-			Insert into StateKV 
-				(Key, Content, Created) 
-			values (?, ?, strftime('%s', 'now')`, kv.Key, kv.Content)
+			Insert into StateKV (Key, Content, Created)
+			values (?, ?, strftime('%s', 'now'))`, kv.Key, kv.Content)
 	}
 	return tx.Commit()
 }
 
 func DeleteNote(id int64) error {
-	_, err := db.Exec(`
+	tx := db.MustBegin()
+	defer tx.Rollback()
+	tx.MustExec(`
 		Insert into NotesHistory (NoteID, Content, Created, Deleted)
 		Select ?, Content, Created, strftime('%s', 'now')
 		from Notes where NoteID = ? 
 		`, id, id)
-	return err
+	tx.MustExec(`Delete from Notes where NotesId = ?`, id)
+	return tx.Commit()
 }
 
 func SaveNote(note Note) (int64, error) {
@@ -109,11 +138,12 @@ func SaveNote(note Note) (int64, error) {
 	// https://www.sqlite.org/autoinc.html
 	// >  If the table is initially empty, then a ROWID of 1 is used
 	if note.Id != 0 {
+		fmt.Print("QI")
 		db.MustExec(`
 			Insert into NotesHistory 
 				(NoteId, Content, Created, Updated)
 				Select ?, Content, Created, strftime('%s', 'now')
-				from Notes where NoteID = ?
+				from Notes where NoteID = ?;
 
 				Update Notes
 				Set 
@@ -123,11 +153,16 @@ func SaveNote(note Note) (int64, error) {
 			`, note.Id, note.Id, note.Content, note.Id)
 		return note.Id, nil
 	} else {
+		fmt.Println("HEX")
 		var retVal int64
-		err := db.Get(&retVal,
-			`Insert into Notes (Content, Created) values (?, strftime('%s', 'now');
-			Select last_insert_rowID();`, note.Content)
-		return retVal, err
+		tx := db.MustBegin()
+		defer tx.Rollback()
+		tx.MustExec("Insert into Notes (Content, Created) values (?, strftime('%s', 'now'));", note.Content)
+		err := tx.Get(&retVal, "Select last_insert_rowid()")
+		if err != nil {
+			return 0, err
+		}
+		return retVal, tx.Commit()
 	}
 }
 
