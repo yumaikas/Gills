@@ -13,8 +13,12 @@ func Route(r chi.Router) {
 	r.Get("/admin/", Home)
 	r.Post("/admin/search", DoSaveState)
 	r.Post("/admin/create", CreateNote)
-	r.Post("/admin/note/save/{noteID}", DoSaveNote)
+
+	/*
+	r.Get("/admin/note/{noteID}", ShowNote)
+	r.Post("/admin/note/{noteID}", DoSaveNote)
 	r.Delete("/admin/note/{noteID}", DoDeleteNote)
+	*/
 }
 
 // TODO: This is going to provide HTTP handlers that are routed by main.go

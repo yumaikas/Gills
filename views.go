@@ -1,37 +1,68 @@
 package main
 
 import (
-	. "./templates"
+	. "yumaikas/gills/templates"
 	"fmt"
 	"io"
 	"time"
 )
 
 var homeLayout = `
-.side-by-side {
-	display: grid;
-	grid-template-columns: 30px auto 10px auto 10px auto 30px;
-	grid-template-areas: ". left . center . right .";
-}
+@media (min-aspect-ratio: 2/1) {
+	.side-by-side {
+		display: grid;
+		grid-template-columns: 30px auto 10px auto 10px auto 30px;
+		grid-template-areas: ". left . center . right .";
+	}
+	.col-left {
+		grid-area: left;
+	}
 
-.app-name {
+	.col-center {
+		grid-area: center;
+	}
+
+	.col-right {
+		grid-area: right;
+	}
+
+	textarea, .note-card {
+		font-size: 9pt;
+	}	
+	.app-name {
 	margin-left: 30px;
+	}
 }
 
-.col-left {
-	grid-area: left;
-}
+@media (max-aspect-ratio: 2/1) {
+	body {
+		font-size: 26px;
+		width: 100%;
+	}
 
-.col-center {
-	grid-area: center;
-}
-
-.col-right {
-	grid-area: right;
-}
-
-textarea, .note-card {
-	font-size: 9pt;
+	input[type=submit] {
+		margin-left: 20px;
+		padding: 5px 10px;
+		font-size: 24px;
+	}
+	input[type=text] {
+		font-size: 24px;
+	}
+	
+	input[type=submit].inline-form {
+		margin-left: 5px;
+		padding: 5px 10px;
+	}
+	
+	input {
+		font-size: 22px;
+		margin-top: 20px;
+		margin-bottom: 20px;
+	}
+	textarea {
+		font-size: 22px;
+		width: 95%;
+	}
 }
 `
 
