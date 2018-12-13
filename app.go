@@ -78,7 +78,10 @@ func DoSaveNote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(strId, 10, 64)
 	if err != nil {
 		w.WriteHeader(400)
-		InvalidSaveIdView(w, appState, strId)
+		InvalidIdView(w,
+			appState.AppName(),
+			"Cannot save note with invalid id: ",
+			strId)
 		return
 	}
 
@@ -102,7 +105,10 @@ func DoDeleteNote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(strId, 10, 64)
 	if err != nil {
 		w.WriteHeader(400)
-		InvalidDeleteIdView(w, appState, strId)
+		InvalidIdView(w,
+			appState.AppName(),
+			"Cannot delete note from invalid id:",
+			strId)
 		return
 	}
 	die(DeleteNote(id))

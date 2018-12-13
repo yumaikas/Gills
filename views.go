@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 	"time"
 	. "yumaikas/gills/templates"
 )
@@ -120,41 +122,13 @@ func SearchView(w io.Writer, state AppState, searchedNotes []Note) error {
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
-func InvalidSaveIdView(w io.Writer, state AppState, invalidID string) error {
-	var template = BasePage(state.AppName(),
-		H2(Atr, Str("400: You sent me a goofy request")),
-		Str(fmt.Sprint("Cannot save note based on invalid id ", invalidID)))
-
-	return RenderWithTargetAndTheme(w, "AQUA", template)
-}
-
-func InvalidDeleteIdView(w io.Writer, appState AppState, invalidID string) error {
-	appName := appState.GetOr("appName", "Gills")
+func InvalidIdView(w io.Writer, appName, message, invalidID string) error {
 	var template = BasePage(appName,
 		H2(Atr, Str("400: You sent me a goofy request")),
-		Str(fmt.Sprint("Cannot delete note based on invalid id ", invalidID)))
+		Str(fmt.Sprint(message, invalidID)))
 
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
-
-func NoteDetailsView(w io.Writer, state AppState, note Note) error {
-	// var template = BasePage(state.AppName())
-	return nil
-}
-
-func tfmt(t time.Time) string {
-	return fmt.Sprintf("%d-%02d-%02d %02d:%02d",
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute())
-}
-
-func min(x, y int) int {
-	if x > y {
-		return y
-	}
-	return x
-}
-
-var NoteDetails = Div(Atr.Class("note-card"))
 
 func renderNoteDeleteForm(note Note, ctx Context) {
 	var template = Form(
@@ -179,6 +153,31 @@ func RecentNotes(notes []Note, count int) func(Context) {
 	}
 }
 
+func NoteDetailsView(w io.Writer, state AppState, note Note) error {
+	noteURL := fmt.Sprint("/admin/note/", note.Id)
+	var template = BasePage(state.AppName(),
+		Form(
+			Atr.Action(noteURL).Method("POST").Class("note-container"),
+			Str("On "+tfmt(note.Created)+" you said:"),
+			TextArea(DimensionsOf(note).Name("note-content"), note.Content),
+			Input(Atr.Type("Submit").Value("Save Changes")),
+			Input(Atr.Type("Submit").Value("Delete Note").FormAction(noteURL).FormMethod("DELETE")),
+		),
+	)
+
+	return RenderWithTargetAndTheme(w, "AQUA", template)
+}
+
+func DimensionsOf(n Note) AttributeChain {
+	lines := strings.Split(n.Content, "\n")
+	numLines := strconv.Itoa(len(lines))
+	maxLineLen := 0
+	for _, l := range lines {
+		maxLineLen = max(maxLineLen, len(strings.Trim(l, "\t \r\n")))
+	}
+	return Atr.Cols(strconv.Itoa(maxLineLen)).Rows(numLines)
+}
+
 func renderNote(n Note, ctx Context) {
 	Div(Atr.Add("data-note-id", fmt.Sprint(n.Id)).Class("note-card"),
 		Div(Atr,
@@ -190,4 +189,23 @@ func renderNote(n Note, ctx Context) {
 		),
 		StrBr(n.Content),
 	)(ctx)
+}
+
+func tfmt(t time.Time) string {
+	return fmt.Sprintf("%d-%02d-%02d %02d:%02d",
+		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute())
+}
+
+func max(x, y int) int {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func min(x, y int) int {
+	if x > y {
+		return y
+	}
+	return x
 }
