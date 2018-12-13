@@ -24,15 +24,6 @@ type noteHistoryDB struct {
 	Deleted int64  `db:"Deleted"`
 }
 
-type Bag map[string]string
-
-func (b Bag) getOr(key, fallback string) string {
-	if value, ok := b[key]; ok {
-		return value
-	}
-	return fallback
-}
-
 var db *sqlx.DB
 
 func InitDB(path string) error {
@@ -96,17 +87,17 @@ type KV struct {
 	Content string `db:"Content"`
 }
 
-func LoadState() (Bag, error) {
+func LoadState() (AppState, error) {
 	results := []KV{}
 	err := db.Select(&results, `Select Key, Content from StateKV;`)
 	if err != nil {
-		return nil, err
+		return AppState{}, err
 	}
 	var retVal = make(map[string]string)
 	for _, kv := range results {
 		retVal[kv.Key] = kv.Content
 	}
-	return retVal, nil
+	return AppState{SingleBag(retVal)}, nil
 }
 
 func SaveState(state []KV) error {

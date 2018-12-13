@@ -1,10 +1,10 @@
 package main
 
 import (
-	. "yumaikas/gills/templates"
 	"fmt"
 	"io"
 	"time"
+	. "yumaikas/gills/templates"
 )
 
 var homeLayout = `
@@ -66,39 +66,28 @@ var homeLayout = `
 }
 `
 
-const scratchpadKey = "scratchpad"
-const draftnoteKey = "draftnote"
-const taglineKey = "tagline"
-const recentSearchKey = "recentSearchTerms"
-
-func HomeView(w io.Writer, appState Bag, recentNotes []Note) error {
-	appName := appState.getOr("appName", "Gills")
-	scratchpadContent := appState.getOr(scratchpadKey, "")
-	draftNote := appState.getOr(draftnoteKey, "")
-	tagline := appState.getOr(taglineKey, "")
-	recentSearchTerms := appState.getOr(recentSearchKey, "")
-
-	var template = BasePage(appName,
+func HomeView(w io.Writer, state AppState, recentNotes []Note) error {
+	var template = BasePage(state.AppName(),
 		Style(homeLayout),
-		H2(Atr.Class("app-name"), Str(appName)),
+		H2(Atr.Class("app-name"), Str(state.AppName())),
 		// TODO: Find a better place to put this, probably make a better header-section
 		// A(Atr.Href("http://jessicaabel.com/ja/growing-gills/"), Str("Growing Gills"))),
 		Form(Atr.Class("side-by-side").Action("/admin/search"),
 			Div(Atr.Class("col-left"),
 				Label(Atr.For(scratchpadKey),
 					Div(Atr, Str("Scratchpad:")),
-					TextArea(Atr.Name(scratchpadKey).Id("scratchpad").Cols("48").Rows("20"), scratchpadContent),
+					TextArea(Atr.Name(scratchpadKey).Id("scratchpad").Cols("48").Rows("20"), state.ScratchPad()),
 				),
 			),
 			Div(Atr.Class("col-center"),
 				Label(Atr.For(draftnoteKey),
 					Div(Atr, Str("What is on your mind?")),
-					TextArea(Atr.Name(draftnoteKey).Id("draftnote").Cols("48").Rows("15"), draftNote),
+					TextArea(Atr.Name(draftnoteKey).Id("draftnote").Cols("48").Rows("15"), state.DraftNote()),
 				),
 				Label(Atr.For(taglineKey),
 					Div(Atr,
 						Str("Tagline:"),
-						Input(Atr.Name(taglineKey).Type("textbox").Id("tagline").Size("45").Value(tagline)),
+						Input(Atr.Name(taglineKey).Type("textbox").Id("tagline").Size("45").Value(state.Tagline())),
 						Input(Atr.Type("submit").
 							Class("inline-form").
 							Value("Save Note").
@@ -109,7 +98,7 @@ func HomeView(w io.Writer, appState Bag, recentNotes []Note) error {
 			Div(Atr.Class("col-right"),
 				Label(Atr.For(recentSearchKey),
 					Input(Atr.Type("submit").FormAction("/admin/search").Class("inline-form").FormMethod("POST").Value("Search Recent")),
-					Input(Atr.Name(recentSearchKey).Id("recentSearch").Size("45").Value(recentSearchTerms)),
+					Input(Atr.Name(recentSearchKey).Id("recentSearch").Size("45").Value(state.RecentSearchTerms())),
 				),
 				RecentNotes(recentNotes, 5),
 			),
@@ -119,10 +108,9 @@ func HomeView(w io.Writer, appState Bag, recentNotes []Note) error {
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
-func SearchView(w io.Writer, appState Bag, searchedNotes []Note) error {
-	appName := appState.getOr("appName", "Gills")
-	var template = BasePage(appName,
-		H2(Atr, Str(appName+" Search")),
+func SearchView(w io.Writer, state AppState, searchedNotes []Note) error {
+	var template = BasePage(state.AppName(),
+		H2(Atr, Str(state.AppName()+" Search")),
 		Div(Atr,
 			Str("Standalone search isn't done yet, check out "),
 			A(Atr.Href("/admin/"), Str("the main page")),
@@ -132,17 +120,16 @@ func SearchView(w io.Writer, appState Bag, searchedNotes []Note) error {
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
-func InvalidSaveIdView(w io.Writer, appState Bag, invalidID string) error {
-	appName := appState.getOr("appName", "Gills")
-	var template = BasePage(appName,
+func InvalidSaveIdView(w io.Writer, state AppState, invalidID string) error {
+	var template = BasePage(state.AppName(),
 		H2(Atr, Str("400: You sent me a goofy request")),
 		Str(fmt.Sprint("Cannot save note based on invalid id ", invalidID)))
 
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
-func InvalidDeleteIdView(w io.Writer, appState Bag, invalidID string) error {
-	appName := appState.getOr("appName", "Gills")
+func InvalidDeleteIdView(w io.Writer, appState AppState, invalidID string) error {
+	appName := appState.GetOr("appName", "Gills")
 	var template = BasePage(appName,
 		H2(Atr, Str("400: You sent me a goofy request")),
 		Str(fmt.Sprint("Cannot delete note based on invalid id ", invalidID)))
@@ -150,7 +137,8 @@ func InvalidDeleteIdView(w io.Writer, appState Bag, invalidID string) error {
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
-func NoteDetailsView(w io.Writer, note Note) error {
+func NoteDetailsView(w io.Writer, state AppState, note Note) error {
+	// var template = BasePage(state.AppName())
 	return nil
 }
 

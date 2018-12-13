@@ -14,10 +14,10 @@ func Route(r chi.Router) {
 	r.Post("/admin/search", DoSaveState)
 	r.Post("/admin/create", CreateNote)
 
-	/*
 	r.Get("/admin/note/{noteID}", ShowNote)
-	r.Post("/admin/note/{noteID}", DoSaveNote)
-	r.Delete("/admin/note/{noteID}", DoDeleteNote)
+	/*
+		r.Post("/admin/note/{noteID}", DoSaveNote)
+		r.Delete("/admin/note/{noteID}", DoDeleteNote)
 	*/
 }
 
@@ -27,7 +27,7 @@ func Route(r chi.Router) {
 func Home(w http.ResponseWriter, r *http.Request) {
 	appState, err := LoadState()
 	die(err)
-	searchTerms := appState.getOr(recentSearchKey, "")
+	searchTerms := appState.GetOr(recentSearchKey, "")
 	notes, err := SearchRecentNotes(searchTerms)
 	die(err)
 	die(HomeView(w, appState, notes))
@@ -36,7 +36,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 func Search(w http.ResponseWriter, r *http.Request) {
 	appState, err := LoadState()
 	die(err)
-	searchTerms := appState.getOr(recentSearchKey, "")
+	searchTerms := appState.GetOr(recentSearchKey, "")
 	notes, err := SearchNotes(searchTerms)
 	die(SearchView(w, appState, notes))
 }
@@ -44,6 +44,10 @@ func Search(w http.ResponseWriter, r *http.Request) {
 func DoSaveState(w http.ResponseWriter, r *http.Request) {
 	die(saveMainPageState(r))
 	http.Redirect(w, r, "/admin/", 301)
+}
+
+func ShowNote(w http.ResponseWriter, r *http.Request) {
+	die(saveMainPageState(r))
 }
 
 func CreateNote(w http.ResponseWriter, r *http.Request) {
@@ -104,14 +108,24 @@ func DoDeleteNote(w http.ResponseWriter, r *http.Request) {
 	die(DeleteNote(id))
 }
 
+func stateEntry(key string, cb ChainBag) KV {
+	return KV{key, cb.GetOr(key, "")}
+}
+
 func saveMainPageState(r *http.Request) error {
-	state := []KV{
-		KV{scratchpadKey, r.FormValue(scratchpadKey)},
-		KV{draftnoteKey, r.FormValue(draftnoteKey)},
-		KV{taglineKey, r.FormValue(taglineKey)},
-		KV{recentSearchKey, r.FormValue(recentSearchKey)},
+	fallback, err := LoadState()
+	die(err)
+	die(r.ParseForm())
+	state := MultiBag(r.Form).BackedBy(fallback)
+
+	toSave := []KV{
+		stateEntry(scratchpadKey, state),
+		stateEntry(draftnoteKey, state),
+		stateEntry(taglineKey, state),
+		stateEntry(recentSearchKey, state),
+		stateEntry(appNameKey, state),
 	}
-	return SaveState(state)
+	return SaveState(toSave)
 }
 
 func die(e error) {
