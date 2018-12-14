@@ -119,7 +119,7 @@ var baseStyle = writeTag("style", Atr, func(ctx Context) {
             	max-width: 1200px;
             	width: 80%;
             }
-            body,input,textarea {
+            body,input,textarea,button {
             	font-family: Iosevka, monospace;
             	background: #191e2a;
             	color: #21EF9F;

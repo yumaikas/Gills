@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
 	"net/http"
 	"strconv"
@@ -14,11 +15,12 @@ func Route(r chi.Router) {
 	r.Post("/admin/search", DoSaveState)
 	r.Post("/admin/create", CreateNote)
 
+	// Have the GET and POST forms so that we can keep the URLs clean when we're just linking
+	// vs coming here from the main admin page (which wants to save some state on the way)
 	r.Get("/admin/note/{noteID}", ShowNote)
-	/*
-		r.Post("/admin/note/{noteID}", DoSaveNote)
-		r.Delete("/admin/note/{noteID}", DoDeleteNote)
-	*/
+	r.Post("/admin/note/{noteID}/show", SaveStateAndRedirToNote)
+	r.Post("/admin/note/{noteID}", DoSaveNote)
+	r.Post("/admin/note/{noteID}/delete", DoDeleteNote)
 }
 
 // TODO: This is going to provide HTTP handlers that are routed by main.go
@@ -46,8 +48,21 @@ func DoSaveState(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/", 301)
 }
 
-func ShowNote(w http.ResponseWriter, r *http.Request) {
+func SaveStateAndRedirToNote(w http.ResponseWriter, r *http.Request) {
 	die(saveMainPageState(r))
+	strId := chi.URLParam(r, "noteID")
+	http.Redirect(w, r, fmt.Sprint("/admin/note/", strId), 301)
+}
+
+func ShowNote(w http.ResponseWriter, r *http.Request) {
+	state, loadErr := LoadState()
+	die(loadErr)
+	strId := chi.URLParam(r, "noteID")
+	id, convErr := strconv.ParseInt(strId, 10, 64)
+	die(convErr)
+	note, repoErr := GetNoteBy(id)
+	die(repoErr)
+	NoteDetailsView(w, state, note)
 }
 
 func CreateNote(w http.ResponseWriter, r *http.Request) {
@@ -63,15 +78,14 @@ func CreateNote(w http.ResponseWriter, r *http.Request) {
 	note.Id, err = SaveNote(note)
 	die(err)
 	// Remove the draftnote so that it gets cleared out on savestate
-	//
-	r.Form.Del("draftnote")
+	r.Form.Set("draftnote", "")
 	die(saveMainPageState(r))
 	http.Redirect(w, r, "/admin/", 301)
 }
 
 func DoSaveNote(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	content := r.PostFormValue("draftnote")
+	content := r.PostFormValue("note-content")
 	strId := chi.URLParam(r, "noteID")
 	appState, err := LoadState()
 	die(err)
@@ -86,14 +100,13 @@ func DoSaveNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var note = Note{
-		Id:      id, // used to signal that this note does *not* have a correspoding database row
+		Id:      id,
 		Content: content,
 		Created: time.Now(),
 	}
 	note.Id, err = SaveNote(note)
 	die(err)
-	die(saveMainPageState(r))
-	http.Redirect(w, r, "/admin/", 301)
+	http.Redirect(w, r, fmt.Sprint("/admin/note/", note.Id), 301)
 }
 
 func DoDeleteNote(w http.ResponseWriter, r *http.Request) {
@@ -112,6 +125,7 @@ func DoDeleteNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	die(DeleteNote(id))
+	http.Redirect(w, r, "/admin/", 301)
 }
 
 func stateEntry(key string, cb ChainBag) KV {

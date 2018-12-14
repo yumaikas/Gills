@@ -112,15 +112,34 @@ func SaveState(state []KV) error {
 	return tx.Commit()
 }
 
+func GetNoteBy(id int64) (Note, error) {
+	var n = &noteDB{}
+	err := db.Get(n, `Select NoteId as Id, Content, Created, Updated, Deleted from Notes where NoteId = ?`, id)
+	if err != nil {
+		return Note{}, err
+	}
+	var note = Note{
+		Id:      n.Id,
+		Content: n.Content,
+		Created: time.Unix(n.Created.Int64, 0),
+	}
+
+	if n.Updated.Valid {
+		note.Updated = time.Unix(n.Created.Int64, 0)
+	}
+
+	return note, err
+}
+
 func DeleteNote(id int64) error {
 	tx := db.MustBegin()
 	defer tx.Rollback()
 	tx.MustExec(`
-		Insert into NotesHistory (NoteID, Content, Created, Deleted)
+		Insert into NoteHistory (NoteID, Content, Created, Deleted)
 		Select ?, Content, Created, strftime('%s', 'now')
 		from Notes where NoteID = ? 
 		`, id, id)
-	tx.MustExec(`Delete from Notes where NotesId = ?`, id)
+	tx.MustExec(`Delete from Notes where NoteId = ?`, id)
 	return tx.Commit()
 }
 
@@ -129,9 +148,8 @@ func SaveNote(note Note) (int64, error) {
 	// https://www.sqlite.org/autoinc.html
 	// >  If the table is initially empty, then a ROWID of 1 is used
 	if note.Id != 0 {
-		fmt.Print("QI")
 		db.MustExec(`
-			Insert into NotesHistory 
+			Insert into NoteHistory 
 				(NoteId, Content, Created, Updated)
 				Select ?, Content, Created, strftime('%s', 'now')
 				from Notes where NoteID = ?;
