@@ -34,6 +34,8 @@ func NoteDetailsView(w io.Writer, state AppState, note Note) error {
 				),
 			),
 		),
+		Div(Atr, Str("Preview: ")),
+		Markdown(note.Content),
 	)
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }

@@ -9,13 +9,15 @@ import (
 	. "yumaikas/gills/templates"
 )
 
-func SearchView(w io.Writer, state AppState, searchedNotes []Note) error {
-	var template = BasePage(state.AppName(),
-		H2(Atr, Str(state.AppName()+" Search")),
-		Div(Atr,
-			Str("Standalone search isn't done yet, check out "),
-			A(Atr.Href("/admin/"), Str("the main page")),
-			Str(" in the mean time"),
+func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) error {
+	var template = BasePage(appName,
+		H2(Atr, Str(appName+" Search")),
+		Form(Atr.Action("/").Method("GET"),
+			Label(Atr.For("q"),
+				Input(Atr.Type("text").Name("q").Value(searchTerms)),
+			),
+			Input(Atr.Type("Submit").Value("Search Notes")),
+			RecentNotes(searchedNotes, len(searchedNotes)),
 		),
 	)
 	return RenderWithTargetAndTheme(w, "AQUA", template)
@@ -64,16 +66,12 @@ func DimensionsOf(n Note) AttributeChain {
 
 func renderNote(n Note, ctx Context) {
 	noteShowURL := fmt.Sprint("/admin/note/", n.Id, "/show")
-	noteActionURL := fmt.Sprint("/admin/note/", n.Id)
 	Div(Atr.Add("data-note-id", fmt.Sprint(n.Id)).Class("note-card"),
 		Div(Atr,
 			Str(tfmt(n.Created)),
-			// TODO: these buttons need to be hooked up better, or I need to just break down and
-			// write a JS frontend for this.
 			Input(Atr.Type("submit").Value("Edit").FormAction(noteShowURL).FormMethod("POST")),
-			Input(Atr.Type("submit").Value("Delete").FormAction(noteActionURL).FormMethod("DELETE")),
 		),
-		StrBr(n.Content),
+		Markdown(n.Content),
 	)(ctx)
 }
 

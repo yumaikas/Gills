@@ -2,10 +2,14 @@ package templates
 
 import (
 	"bytes"
+	"github.com/russross/blackfriday"
 	"html/template"
 	"io"
 	"strings"
 )
+
+// TODO: Come back to this if I find it works better "gopkg.in/russross/blackfriday.v2"
+// TODO: integrate "github.com/microcosm-cc/bluemonday" into this code if I start trusting more than one user.
 
 // This is a content string
 type Content struct {
@@ -89,7 +93,26 @@ func StrBr(content string) func(Context) {
 		ctx.startLine()
 		ctx.write(strings.Replace(buf.String(), "\n", "<br/>", -1))
 		ctx.endLine()
+	}
+}
 
+func Markdown(content string) func(Context) {
+	return func(ctx Context) {
+		flags := 0 |
+			blackfriday.HTML_USE_SMARTYPANTS |
+			blackfriday.HTML_SMARTYPANTS_FRACTIONS
+
+		extensions := blackfriday.EXTENSION_TABLES |
+			blackfriday.EXTENSION_FENCED_CODE |
+			blackfriday.EXTENSION_AUTOLINK |
+			blackfriday.EXTENSION_STRIKETHROUGH |
+			blackfriday.EXTENSION_HARD_LINE_BREAK |
+			0
+
+		renderer := blackfriday.HtmlRenderer(flags, "", "")
+
+		output := blackfriday.Markdown([]byte(content), renderer, extensions)
+		ctx.write(string(output))
 	}
 }
 

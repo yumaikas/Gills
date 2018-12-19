@@ -36,11 +36,11 @@ func Home(w http.ResponseWriter, r *http.Request) {
 }
 
 func Search(w http.ResponseWriter, r *http.Request) {
-	appState, err := LoadState()
-	die(err)
-	searchTerms := appState.GetOr(recentSearchKey, "")
+	state, err := LoadState()
+	searchTerms := r.URL.Query().Get("q")
 	notes, err := SearchNotes(searchTerms)
-	die(SearchView(w, appState, notes))
+	die(err)
+	die(SearchView(w, state.AppName(), searchTerms, notes))
 }
 
 func DoSaveState(w http.ResponseWriter, r *http.Request) {
