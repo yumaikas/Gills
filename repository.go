@@ -64,6 +64,7 @@ func SearchNotes(searchTerms string) ([]Note, error) {
 	err := sqlx.Select(db, notes, `
 		Select NoteId as Id, Content, Created, Updated 
 		from Notes where Content like '%' || ? || '%'  
+		order by Created DESC
 		`, searchTerms)
 	if err != nil {
 		return nil, err
