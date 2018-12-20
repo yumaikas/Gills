@@ -6,7 +6,7 @@ import (
 )
 
 var homeLayout = `
-@media (min-aspect-ratio: 2/1) {
+@media (min-aspect-ratio: 4/3) {
 	.side-by-side {
 		display: grid;
 		grid-template-columns: 30px auto 10px auto 10px auto 30px;
@@ -32,7 +32,7 @@ var homeLayout = `
 	}
 }
 
-@media (max-aspect-ratio: 2/1) {
+@media (max-aspect-ratio: 4/3) {
 	body {
 		font-size: 26px;
 		width: 100%;

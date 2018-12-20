@@ -68,6 +68,14 @@ func (attrs AttributeChain) Action(name string) AttributeChain {
 	return attrs.Add("action", name)
 }
 
+func (attrs AttributeChain) Accept(name string) AttributeChain {
+	return attrs.Add("accept", name)
+}
+
+func (attrs AttributeChain) EncType(enctype string) AttributeChain {
+	return attrs.Add("enctype", enctype)
+}
+
 func (attrs AttributeChain) Href(href string) AttributeChain {
 	return attrs.Add("href", href)
 }

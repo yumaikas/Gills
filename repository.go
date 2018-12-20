@@ -26,6 +26,9 @@ type noteHistoryDB struct {
 
 var db *sqlx.DB
 
+// Use this to mark upload display notes in a way that won't get accidentally set by a human
+const UploadUUID = "8afee0a6-9ec4-46c1-a530-89287f579300"
+
 func InitDB(path string) error {
 	var err error
 	db, err = sqlx.Open("sqlite3", path)
@@ -34,13 +37,10 @@ func InitDB(path string) error {
 	}
 	return buildSchema(db)
 }
-func SearchRecentNotes(searchTerms string) ([]Note, error) {
+
+func queryNotes(query, searchTerms string) ([]Note, error) {
 	notes := &[]noteDB{}
-	err := sqlx.Select(db, notes, `
-		Select NoteId as Id, Content, Created, Updated 
-		from Notes where Content like '%' || ? || '%'  
-		order by Created DESC
-		`, searchTerms)
+	err := sqlx.Select(db, notes, query, searchTerms)
 	if err != nil {
 		return nil, err
 	}
@@ -54,33 +54,40 @@ func SearchRecentNotes(searchTerms string) ([]Note, error) {
 			Updated: time.Unix(note.Updated.Int64, 0),
 		}
 	}
-	fmt.Println("Search returned", len(retVals), "notes")
 	return retVals, nil
+}
+
+func SearchUploadNotes(searchTerms string) ([]Note, error) {
+	return queryNotes(`
+		Select NoteId as Id, Content, Created, Updated 
+		from Notes 
+			where Content like '%' || ? || '%'  
+			AND Content like '%@upload-8afee0a6-9ec4-46c1-a530-89287f579300%'
+		order by Created DESC
+		`, searchTerms)
+
+}
+
+func SearchRecentNotes(searchTerms string) ([]Note, error) {
+	return queryNotes(`
+		Select NoteId as Id, Content, Created, Updated 
+		from Notes 
+			where Content like '%' || ? || '%'  
+			AND Content not like '%@archive%'
+		order by Created DESC
+		`, searchTerms)
 }
 
 // Assumes an open DB connection
 func SearchNotes(searchTerms string) ([]Note, error) {
-	notes := &[]noteDB{}
-	err := sqlx.Select(db, notes, `
+	return queryNotes(`
 		Select NoteId as Id, Content, Created, Updated 
-		from Notes where Content like '%' || ? || '%'  
+		from Notes 
+		where 
+			Content like '%' || ? || '%'  
+			AND Content not like '%@archive%'
 		order by Created DESC
 		`, searchTerms)
-	if err != nil {
-		return nil, err
-	}
-	retVals := make([]Note, len(*notes))
-	for idx, note := range *notes {
-		retVals[idx] = Note{
-			Id:      note.Id,
-			Content: note.Content,
-			// I don't care if these are null for now.
-			Created: time.Unix(note.Created.Int64, 0),
-			Updated: time.Unix(note.Updated.Int64, 0),
-		}
-	}
-	fmt.Println("Search returned", len(retVals), "notes")
-	return retVals, nil
 }
 
 type KV struct {

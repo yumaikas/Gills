@@ -12,12 +12,39 @@ import (
 func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) error {
 	var template = BasePage(appName,
 		H2(Atr, Str(appName+" Search")),
+		Div(Atr,
+			A(Atr.Href("/admin/upload"), Str("Upload Photos")),
+		),
+		Div(Atr,
+			A(Atr.Href("/admin/"), Str("View Other Notes")),
+		),
 		Form(Atr.Action("/").Method("GET"),
 			Label(Atr.For("q"),
 				Input(Atr.Type("text").Name("q").Value(searchTerms)),
 			),
 			Input(Atr.Type("Submit").Value("Search Notes")),
 			RecentNotes(searchedNotes, len(searchedNotes)),
+		),
+	)
+	return RenderWithTargetAndTheme(w, "AQUA", template)
+}
+
+func UploadView(w io.Writer, state AppState, searchTerms string, recentUploadNotes []Note) error {
+	var template = BasePage(state.AppName(),
+		H2(Atr, Str("Upload images")),
+		Form(Atr.Action("/admin/upload").Method("GET").EncType("multipart/form-data"),
+			Div(Atr,
+				Input(Atr.Type("file").Name("upload").Accept("image/*")),
+				Button(Atr.FormAction("/admin/upload").FormMethod("POST"), Str("Upload Image")),
+			),
+			Div(Atr, Str("-------------------------------")),
+			Div(Atr,
+				Label(Atr.For("q"),
+					Input(Atr.Type("text").Name("q").Value(searchTerms)),
+				),
+				Input(Atr.Type("Submit").Value("Search Notes")),
+			),
+			RecentNotes(recentUploadNotes, 5),
 		),
 	)
 	return RenderWithTargetAndTheme(w, "AQUA", template)

@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,10 @@ func Route(r chi.Router) {
 	r.Post("/admin/note/{noteID}/show", SaveStateAndRedirToNote)
 	r.Post("/admin/note/{noteID}", DoSaveNote)
 	r.Post("/admin/note/{noteID}/delete", DoDeleteNote)
+	r.Get("/admin/upload", ShowUploadForm)
+	r.Get("/admin/upload/{filename}", ShowUploadedFile)
+	r.Post("/admin/upload", ProcessUpload)
+	r.Get("/admin/upload/list", ShowUploadNotes)
 }
 
 // TODO: This is going to provide HTTP handlers that are routed by main.go
@@ -33,6 +38,47 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	notes, err := SearchRecentNotes(searchTerms)
 	die(err)
 	die(HomeView(w, appState, notes))
+}
+
+func ShowUploadForm(w http.ResponseWriter, r *http.Request) {
+	appState, err := LoadState()
+	searchTerms := r.URL.Query().Get("q")
+	die(err)
+	notes, err := SearchUploadNotes(searchTerms)
+	die(err)
+	die(UploadView(w, appState, searchTerms, notes))
+}
+
+func ShowUploadNotes(w http.ResponseWriter, r *http.Request) {
+	state, err := LoadState()
+	die(err)
+	searchTerms := r.URL.Query().Get("q")
+	notes, err := SearchUploadNotes(searchTerms)
+	die(err)
+	die(SearchView(w, state.AppName(), searchTerms, notes))
+}
+
+func ShowUploadedFile(w http.ResponseWriter, r *http.Request) {
+	fileName := chi.URLParam(r, "filename")
+	http.ServeFile(w, r, PathForName(fileName))
+}
+
+func ProcessUpload(w http.ResponseWriter, r *http.Request) {
+	file, header, err := r.FormFile("upload")
+	fmt.Println(header.Filename)
+	fmt.Println(header.Header)
+	die(err)
+	defer file.Close()
+	parts := strings.Split(header.Filename, ".")
+	ext := strings.ToLower(parts[len(parts)-1])
+	die(err)
+	fmt.Println(ext)
+	fmt.Println(parts)
+	fileName, err := SaveUploadedFile(file, ext)
+	die(err)
+	_, err = SaveNote(NoteForFileName(fileName))
+	die(err)
+	http.Redirect(w, r, "/admin/upload", 301)
 }
 
 func Search(w http.ResponseWriter, r *http.Request) {
