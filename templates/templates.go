@@ -23,6 +23,8 @@ type Attribute struct {
 	Value string
 	// If false, escape the string, if true, emit it raw
 	Trusted bool
+	// If true, then this is an attribute without a value
+	Void bool
 }
 
 type Context struct {
@@ -154,6 +156,7 @@ var baseStyle = writeTag("style", Atr, func(ctx Context) {
 	        	margin-top: 5px;
 	        	padding-top: 5px;
             }
+            img {max-width: 85%;}
             `)
 	}
 })
@@ -161,6 +164,9 @@ var baseStyle = writeTag("style", Atr, func(ctx Context) {
 func (ctx Context) writeAttributes(attributes AttributeChain) {
 	for _, attr := range attributes {
 		ctx.write(" " + attr.Key)
+		if attr.Void {
+			continue
+		}
 		ctx.write("=\"")
 		if attr.Trusted {
 			ctx.write(attr.Value)

@@ -29,27 +29,6 @@ func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) 
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
-func UploadView(w io.Writer, state AppState, searchTerms string, recentUploadNotes []Note) error {
-	var template = BasePage(state.AppName(),
-		H2(Atr, Str("Upload images")),
-		Form(Atr.Action("/admin/upload").Method("GET").EncType("multipart/form-data"),
-			Div(Atr,
-				Input(Atr.Type("file").Name("upload").Accept("image/*")),
-				Button(Atr.FormAction("/admin/upload").FormMethod("POST"), Str("Upload Image")),
-			),
-			Div(Atr, Str("-------------------------------")),
-			Div(Atr,
-				Label(Atr.For("q"),
-					Input(Atr.Type("text").Name("q").Value(searchTerms)),
-				),
-				Input(Atr.Type("Submit").Value("Search Notes")),
-			),
-			RecentNotes(recentUploadNotes, 5),
-		),
-	)
-	return RenderWithTargetAndTheme(w, "AQUA", template)
-}
-
 func InvalidIdView(w io.Writer, appName, message, invalidID string) error {
 	var template = BasePage(appName,
 		H2(Atr, Str("400: You sent me a goofy request")),

@@ -64,19 +64,21 @@ func ShowUploadedFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func ProcessUpload(w http.ResponseWriter, r *http.Request) {
-	file, header, err := r.FormFile("upload")
-	fmt.Println(header.Filename)
-	fmt.Println(header.Header)
-	die(err)
-	defer file.Close()
-	parts := strings.Split(header.Filename, ".")
-	ext := strings.ToLower(parts[len(parts)-1])
-	die(err)
-	fmt.Println(ext)
-	fmt.Println(parts)
-	fileName, err := SaveUploadedFile(file, ext)
-	die(err)
-	_, err = SaveNote(NoteForFileName(fileName))
+	err := r.ParseMultipartForm(1000000)
+	forms := r.MultipartForm
+	files := forms.File["upload"]
+	fileNames := make([]string, len(files))
+	for i, header := range files {
+		file, err := files[i].Open()
+		defer file.Close()
+		die(err)
+		parts := strings.Split(header.Filename, ".")
+		ext := strings.ToLower(parts[len(parts)-1])
+		name, err := SaveUploadedFile(file, ext)
+		die(err)
+		fileNames[i] = name
+	}
+	_, err = SaveNote(NoteForFileNames(fileNames))
 	die(err)
 	http.Redirect(w, r, "/admin/upload", 301)
 }
@@ -171,7 +173,7 @@ func DoDeleteNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	die(DeleteNote(id))
-	http.Redirect(w, r, "/admin/", 301)
+	http.Redirect(w, r, "/admin/upload", 301)
 }
 
 func stateEntry(key string, cb ChainBag) KV {

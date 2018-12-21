@@ -13,6 +13,10 @@ func Div(attributes AttributeChain, inner ...func(Context)) func(Context) {
 	return writeTag("div", attributes, inner...)
 }
 
+func Span(attributes AttributeChain, inner ...func(Context)) func(Context) {
+	return writeTag("span", attributes, inner...)
+}
+
 func Style(inner string) func(Context) {
 	return writeTag("style", Atr, func(ctx Context) {
 		ctx.indentMultiline(inner)
@@ -64,6 +68,12 @@ func Button(attributes AttributeChain, inner ...func(Context)) func(Context) {
 
 func Input(attributes AttributeChain) func(Context) {
 	return writeVoidTag("input", attributes)
+}
+
+func JS(script string) func(Context) {
+	return writeTag("script", Atr, func(ctx Context) {
+		ctx.write(script)
+	})
 }
 
 func TextArea(attributes AttributeChain, inner string) func(Context) {

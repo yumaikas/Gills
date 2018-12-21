@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"errors"
-	"fmt"
 	"gopkg.in/myesui/uuid.v1"
 	"io"
 	"os"
@@ -28,12 +28,18 @@ func SaveUploadedFile(formFile io.Reader, extension string) (string, error) {
 	return randName, nil
 }
 
-func NoteForFileName(name string) Note {
-	content := fmt.Sprint(
-		"![Uploaded file](/admin/upload/", name, ")\n\n",
-		"@archive @upload-", UploadUUID)
+func NoteForFileNames(names []string) Note {
+	var buf bytes.Buffer
 
-	return Note{Content: content}
+	for _, name := range names {
+		buf.WriteString("![Uploaded file](/admin/upload/")
+		buf.WriteString(name)
+		buf.WriteString(")\n\n")
+	}
+	buf.WriteString("@archive @upload-")
+	buf.WriteString(UploadUUID)
+
+	return Note{Content: buf.String()}
 }
 
 var ErrNotDir = errors.New("$PWD/uploads is not a directory!")

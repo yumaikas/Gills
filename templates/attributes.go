@@ -8,6 +8,9 @@ func (attrs AttributeChain) Add(key, value string) AttributeChain {
 	return append(attrs, Attribute{Key: key, Value: value, Trusted: false})
 }
 
+func (attrs AttributeChain) AddVoid(key string) AttributeChain {
+	return append(attrs, Attribute{Key: key, Trusted: false, Void: true})
+}
 func (attrs AttributeChain) AddUnsafe(key, value string) AttributeChain {
 	return append(attrs, Attribute{Key: key, Value: value, Trusted: true})
 }
@@ -70,6 +73,10 @@ func (attrs AttributeChain) Action(name string) AttributeChain {
 
 func (attrs AttributeChain) Accept(name string) AttributeChain {
 	return attrs.Add("accept", name)
+}
+
+func (attrs AttributeChain) Multiple() AttributeChain {
+	return attrs.AddVoid("multiple")
 }
 
 func (attrs AttributeChain) EncType(enctype string) AttributeChain {
