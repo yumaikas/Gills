@@ -102,7 +102,8 @@ func Markdown(content string) func(Context) {
 	return func(ctx Context) {
 		flags := 0 |
 			blackfriday.HTML_USE_SMARTYPANTS |
-			blackfriday.HTML_SMARTYPANTS_FRACTIONS
+			blackfriday.HTML_SMARTYPANTS_FRACTIONS |
+			blackfriday.HTML_FOOTNOTE_RETURN_LINKS
 
 		extensions := blackfriday.EXTENSION_TABLES |
 			blackfriday.EXTENSION_FOOTNOTES |
