@@ -105,6 +105,7 @@ func Markdown(content string) func(Context) {
 			blackfriday.HTML_SMARTYPANTS_FRACTIONS
 
 		extensions := blackfriday.EXTENSION_TABLES |
+			blackfriday.EXTENSION_FOOTNOTES |
 			blackfriday.EXTENSION_FENCED_CODE |
 			blackfriday.EXTENSION_AUTOLINK |
 			blackfriday.EXTENSION_STRIKETHROUGH |
