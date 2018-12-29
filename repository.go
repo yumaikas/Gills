@@ -63,6 +63,7 @@ func SearchUploadNotes(searchTerms string) ([]Note, error) {
 		from Notes 
 			where Content like '%' || ? || '%'  
 			AND Content like '%@upload-8afee0a6-9ec4-46c1-a530-89287f579300%'
+			AND Content not like '%--@script%'
 		order by Created DESC
 		`, searchTerms)
 
@@ -73,12 +74,12 @@ func SearchRecentNotes(searchTerms string) ([]Note, error) {
 		Select NoteId as Id, Content, Created, Updated 
 		from Notes 
 			where Content like '%' || ? || '%'  
-			AND Content not like '%@archive%'
+			AND Content not like '%@archive%' 
+			AND Content not like '%--@script%'
 		order by Created DESC
 		`, searchTerms)
 }
 
-// Assumes an open DB connection
 func SearchNotes(searchTerms string) ([]Note, error) {
 	return queryNotes(`
 		Select NoteId as Id, Content, Created, Updated 
@@ -86,6 +87,7 @@ func SearchNotes(searchTerms string) ([]Note, error) {
 		where 
 			Content like '%' || ? || '%'  
 			AND Content not like '%@archive%'
+			AND Content not like '%--@script%'
 		order by Created DESC
 		`, searchTerms)
 }
@@ -151,6 +153,43 @@ func DeleteNote(id int64) error {
 	return tx.Commit()
 }
 
+func CreateScript(note Note, name string) error {
+	id, err := SaveNote(note)
+	if err != nil {
+		return err
+	}
+	db.MustExec(`INSERT OR FAIL Into ScriptNotes(NotedId, Name)`, id, name)
+	return nil
+}
+
+func UpdateScriptName(currentName, newName string) error {
+	db.MustExec(`Update ScriptNotes Set Name = ? where Name = ?`, newName, currentName)
+	return nil
+}
+
+func ListScriptNames(searchTerms string) ([]string, error) {
+	var scriptNames = &[]string{}
+	err := sqlx.Select(db, scriptNames, `Select Name from ScriptNotes`)
+	if err != nil {
+		return nil, err
+	}
+	return scriptName, nil
+}
+
+type scriptDB struct {
+	noteDB
+	name string
+}
+
+func GetScriptByName(name string) (Note, error) {
+	var id *int
+	err := db.Get(id, `Select NoteId from ScripNotes where Name = ?`, name)
+	if err != nil {
+		return Note{}, err
+	}
+	return GetNoteBy(id)
+}
+
 func SaveNote(note Note) (int64, error) {
 	// 0 ID means that this note isn't in the database
 	// https://www.sqlite.org/autoinc.html
@@ -191,6 +230,12 @@ func buildSchema(database *sqlx.DB) error {
 		Created int, -- unix timestamp
 		Updated int, -- unix timestamp
 		Deleted int -- unix timestamp
+	);
+
+	Create Table If Note Exists ScriptNotes (
+		ScriptID INTEGER PRIMARY KEY,
+		NoteId int, -- The note ID from which the script will be populated
+		Name text UNIQUE -- 
 	);
 
 	Create Table If Not Exists NoteHistory (

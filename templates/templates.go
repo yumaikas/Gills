@@ -34,15 +34,8 @@ type Context struct {
 }
 
 func RenderWithTargetAndTheme(w io.Writer, themeName string, template func(Context)) (err error) {
-	defer func() {
-		val := recover()
-		if errInner, ok := val.(error); ok {
-			err = errInner
-		}
-	}()
-	err = nil
 	template(Context{0, w, themeName})
-	return
+	return nil
 }
 
 func (ctx Context) startLine() {
@@ -71,8 +64,6 @@ func (ctx Context) writeLine(content string) {
 	ctx.write(content)
 	ctx.endLine()
 }
-
-func nothing(ctx Context) {}
 
 func BasePage(title string, inner ...func(Context)) func(Context) {
 	return Html(Title(Atr, Str(title)), Body(inner...))

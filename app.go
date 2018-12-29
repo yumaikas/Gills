@@ -26,6 +26,23 @@ func Route(r chi.Router) {
 	r.Get("/admin/upload/{filename}", ShowUploadedFile)
 	r.Post("/admin/upload", ProcessUpload)
 	r.Get("/admin/upload/list", ShowUploadNotes)
+
+	// Scripting stuffs
+	// r.Get("/admin/scripting/test", ShowLuaTestForm)
+	// r.Post("/admin/scripting/test", RunLuaTestForm)
+
+	// Run/Test new lua scripts
+	r.Get("/admin/scripts/new/", NewLuaScriptForm)
+	r.Post("/admin/scripts/new/run", RunNewLuaScript)
+	r.Post("/admin/scripts/new/", CreateNewLuaScript)
+
+	// Edit scripts
+	r.Get("/admin/scripts/edit/{script-name}", EditLuaScript)
+	r.Post("/admin/scripts/edit/{script-name}", SaveLuaScript)
+
+	// Run scripts that have been saved
+	r.Get("/admin/scripts/{script-name}", RunLuaScript)
+	r.Post("/admin/scripts/{script-name}", RunLuaScript)
 }
 
 // TODO: This is going to provide HTTP handlers that are routed by main.go
