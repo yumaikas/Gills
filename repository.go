@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"time"
@@ -15,6 +14,7 @@ type noteDB struct {
 	Updated sql.NullInt64 `db:"Updated"`
 	Deleted sql.NullInt64 `db:"Deleted"`
 }
+
 type noteHistoryDB struct {
 	Id      int64  `db:"Id"`
 	NoteId  int64  `db:"NoteId"`
@@ -75,7 +75,6 @@ func SearchRecentNotes(searchTerms string) ([]Note, error) {
 		from Notes 
 			where Content like '%' || ? || '%'  
 			AND Content not like '%@archive%' 
-			AND Content not like '%--@script%'
 		order by Created DESC
 		`, searchTerms)
 }
@@ -87,7 +86,6 @@ func SearchNotes(searchTerms string) ([]Note, error) {
 		where 
 			Content like '%' || ? || '%'  
 			AND Content not like '%@archive%'
-			AND Content not like '%--@script%'
 		order by Created DESC
 		`, searchTerms)
 }
@@ -110,6 +108,7 @@ func LoadState() (AppState, error) {
 	return AppState{SingleBag(retVal)}, nil
 }
 
+// This is more of a "Save Settings" now. I think I'm going to remove the delete.
 func SaveState(state []KV) error {
 	tx := db.MustBegin()
 	defer tx.Rollback()
@@ -135,7 +134,7 @@ func GetNoteBy(id int64) (Note, error) {
 	}
 
 	if n.Updated.Valid {
-		note.Updated = time.Unix(n.Created.Int64, 0)
+		note.Updated = time.Unix(n.Updated.Int64, 0)
 	}
 
 	return note, err
@@ -151,43 +150,6 @@ func DeleteNote(id int64) error {
 		`, id, id)
 	tx.MustExec(`Delete from Notes where NoteId = ?`, id)
 	return tx.Commit()
-}
-
-func CreateScript(note Note, name string) error {
-	id, err := SaveNote(note)
-	if err != nil {
-		return err
-	}
-	db.MustExec(`INSERT OR FAIL Into ScriptNotes(NotedId, Name)`, id, name)
-	return nil
-}
-
-func UpdateScriptName(currentName, newName string) error {
-	db.MustExec(`Update ScriptNotes Set Name = ? where Name = ?`, newName, currentName)
-	return nil
-}
-
-func ListScriptNames(searchTerms string) ([]string, error) {
-	var scriptNames = &[]string{}
-	err := sqlx.Select(db, scriptNames, `Select Name from ScriptNotes`)
-	if err != nil {
-		return nil, err
-	}
-	return scriptName, nil
-}
-
-type scriptDB struct {
-	noteDB
-	name string
-}
-
-func GetScriptByName(name string) (Note, error) {
-	var id *int
-	err := db.Get(id, `Select NoteId from ScripNotes where Name = ?`, name)
-	if err != nil {
-		return Note{}, err
-	}
-	return GetNoteBy(id)
 }
 
 func SaveNote(note Note) (int64, error) {
@@ -209,7 +171,6 @@ func SaveNote(note Note) (int64, error) {
 			`, note.Id, note.Id, note.Content, note.Id)
 		return note.Id, nil
 	} else {
-		fmt.Println("HEX")
 		var retVal int64
 		tx := db.MustBegin()
 		defer tx.Rollback()
@@ -232,10 +193,23 @@ func buildSchema(database *sqlx.DB) error {
 		Deleted int -- unix timestamp
 	);
 
-	Create Table If Note Exists ScriptNotes (
+	Create Table If Not Exists Scripts (
 		ScriptID INTEGER PRIMARY KEY,
-		NoteId int, -- The note ID from which the script will be populated
-		Name text UNIQUE -- 
+		Name text UNIQUE -- The name of the script
+		Content text,
+		Created int, -- unix timestamp
+		Updated int, -- unix timestamp
+		Deleted int -- unix timestamp
+	);
+
+	Create Table If Not Exists ScriptHistory (
+		Id INTEGER PRIMARY KEY,
+		ScriptId int,
+		Name text,
+		Content text,
+		Created int, -- unix timestamp
+		Updated int, -- unix timestamp
+		Deleted int -- unix timestamp
 	);
 
 	Create Table If Not Exists NoteHistory (
@@ -255,6 +229,8 @@ func buildSchema(database *sqlx.DB) error {
 		Updated int, -- unix timestamp
 		Deleted int -- unix timestamp
 	);
+
+	Create Unique Index If Not Exists UniqueKV ON StateKV(Key)
 	Create Index If Not Exists KVidx ON StateKV(Key, Content);`
 
 	_, err := database.Exec(schema)

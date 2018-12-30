@@ -87,6 +87,14 @@ func (attrs AttributeChain) Href(href string) AttributeChain {
 	return attrs.Add("href", href)
 }
 
+func (attrs AttributeChain) Rel(rel string) AttributeChain {
+	return attrs.Add("rel", rel)
+}
+
+func (attrs AttributeChain) Src(src string) AttributeChain {
+	return attrs.Add("src", src)
+}
+
 func (attrs AttributeChain) UnsafeHref(href string) AttributeChain {
 	return attrs.AddUnsafe("href", href)
 }

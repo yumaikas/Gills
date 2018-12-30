@@ -74,7 +74,7 @@ func Html(inner ...func(Context)) func(Context) {
 		ctx.writeLine("<!DOCTYPE html>")
 		ctx.writeLine("<html>")
 		ctx.writeLine("<meta charset=\"utf-8\">")
-		ctx.writeTags(inner...)
+		ctx.WriteTags(inner...)
 		ctx.writeLine("</html>")
 	}
 }
@@ -120,7 +120,7 @@ func Str(content string) func(Context) {
 }
 
 func Body(inner ...func(ctx Context)) func(ctx Context) {
-	return writeTag("body", Atr, append([]func(Context){baseStyle}, inner...)...)
+	return WriteTag("body", Atr, append([]func(Context){baseStyle}, inner...)...)
 }
 
 func (ctx Context) indentMultiline(str string) {
@@ -130,7 +130,7 @@ func (ctx Context) indentMultiline(str string) {
 	}
 }
 
-var baseStyle = writeTag("style", Atr, func(ctx Context) {
+var baseStyle = WriteTag("style", Atr, func(ctx Context) {
 	if ctx.themeName == "AQUA" {
 		ctx.indentMultiline(`
             body {
@@ -170,7 +170,7 @@ func (ctx Context) writeAttributes(attributes AttributeChain) {
 	}
 }
 
-func writeVoidTag(tagname string, attributes AttributeChain) func(Context) {
+func WriteVoidTag(tagname string, attributes AttributeChain) func(Context) {
 	return func(ctx Context) {
 		ctx.startLine()
 		ctx.write("<" + tagname)
@@ -180,14 +180,14 @@ func writeVoidTag(tagname string, attributes AttributeChain) func(Context) {
 	}
 }
 
-func (ctx Context) writeTags(inner ...func(ctx Context)) {
+func (ctx Context) WriteTags(inner ...func(ctx Context)) {
 	innerCtx := Context{ctx.indentCount + 1, ctx.w, ctx.themeName}
 	for _, fn := range inner {
 		fn(innerCtx)
 	}
 }
 
-func writeTag(tagname string, attributes AttributeChain, inner ...func(ctx Context)) func(ctx Context) {
+func WriteTag(tagname string, attributes AttributeChain, inner ...func(ctx Context)) func(ctx Context) {
 	return func(ctx Context) {
 		ctx.startLine()
 		ctx.write("<")
@@ -195,7 +195,7 @@ func writeTag(tagname string, attributes AttributeChain, inner ...func(ctx Conte
 		ctx.writeAttributes(attributes)
 		ctx.write(">")
 		ctx.endLine()
-		ctx.writeTags(inner...)
+		ctx.WriteTags(inner...)
 		ctx.writeLine("</" + tagname + ">")
 	}
 }

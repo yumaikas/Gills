@@ -37,20 +37,6 @@ func InvalidIdView(w io.Writer, appName, message, invalidID string) error {
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
-func renderNoteDeleteForm(note Note, ctx Context) {
-	var template = Form(
-		Atr.Id(fmt.Sprint("note-delete-", note.Id)).Method("DELETE").Action(fmt.Sprint("/admin/note/", note.Id)))
-	template(ctx)
-}
-func NoteDeletionForms(notes []Note, count int) func(Context) {
-	return func(ctx Context) {
-		numNotes := min(len(notes), count)
-		for i := 0; i < numNotes; i++ {
-			renderNoteDeleteForm(notes[i], ctx)
-		}
-	}
-}
-
 func RecentNotes(notes []Note, count int) func(Context) {
 	return func(ctx Context) {
 		numNotes := min(len(notes), count)

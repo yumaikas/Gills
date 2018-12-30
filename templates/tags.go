@@ -6,74 +6,82 @@ import (
 )
 
 func Br() func(Context) {
-	return writeVoidTag("br", Atr)
+	return WriteVoidTag("br", Atr)
 }
 
 func Div(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("div", attributes, inner...)
+	return WriteTag("div", attributes, inner...)
 }
 
 func Span(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("span", attributes, inner...)
+	return WriteTag("span", attributes, inner...)
 }
 
 func Style(inner string) func(Context) {
-	return writeTag("style", Atr, func(ctx Context) {
+	return WriteTag("style", Atr, func(ctx Context) {
 		ctx.indentMultiline(inner)
 	})
 }
 
+func StyleLink(href string) func(Context) {
+	return WriteVoidTag("link", Atr.Rel("stylesheet").Type("text/css").Href(href))
+}
+
 func H1(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("h2", attributes, inner...)
+	return WriteTag("h2", attributes, inner...)
 }
 
 func H2(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("h2", attributes, inner...)
+	return WriteTag("h2", attributes, inner...)
 }
 
 func Title(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("title", attributes, inner...)
+	return WriteTag("title", attributes, inner...)
 }
 
 func A(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("a", attributes, inner...)
+	return WriteTag("a", attributes, inner...)
 }
 func P(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("p", attributes, inner...)
+	return WriteTag("p", attributes, inner...)
 }
 
 func Table(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("Table", attributes, inner...)
+	return WriteTag("Table", attributes, inner...)
 }
 
 func Td(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("td", attributes, inner...)
+	return WriteTag("td", attributes, inner...)
 }
 
 func Tr(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("tr", attributes, inner...)
+	return WriteTag("tr", attributes, inner...)
 }
 
 func Form(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("form", attributes, inner...)
+	return WriteTag("form", attributes, inner...)
 }
 
 func Label(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("label", attributes, inner...)
+	return WriteTag("label", attributes, inner...)
 }
 
 func Button(attributes AttributeChain, inner ...func(Context)) func(Context) {
-	return writeTag("button", attributes, inner...)
+	return WriteTag("button", attributes, inner...)
 }
 
 func Input(attributes AttributeChain) func(Context) {
-	return writeVoidTag("input", attributes)
+	return WriteVoidTag("input", attributes)
 }
 
 func JS(script string) func(Context) {
-	return writeTag("script", Atr, func(ctx Context) {
+	return WriteTag("script", Atr, func(ctx Context) {
 		ctx.write(script)
 	})
+}
+
+func JSLink(src string) func(Context) {
+	return WriteTag("script", Atr.Src(src), func(ctx Context) {})
 }
 
 func TextArea(attributes AttributeChain, inner string) func(Context) {
