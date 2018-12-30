@@ -67,7 +67,7 @@ var homeLayout = `
 func HomeView(w io.Writer, state AppState, recentNotes []Note) error {
 	var template = BasePage(state.AppName(),
 		Style(homeLayout),
-		H2(Atr.Class("app-name"), Str(state.AppName())),
+		H2(Atr.Class("app-name"), A(Atr.Href("/"), state.AppName())),
 		// TODO: Find a better place to put this, probably make a better header-section
 		// A(Atr.Href("http://jessicaabel.com/ja/growing-gills/"), Str("Growing Gills"))),
 		Form(Atr.Class("side-by-side").Action("/admin/search"),

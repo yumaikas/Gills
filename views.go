@@ -26,7 +26,7 @@ func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) 
 				Input(Atr.Type("text").Name("q").Value(searchTerms)),
 			),
 			Input(Atr.Type("Submit").Value("Search Notes")),
-			RecentNotes(searchedNotes, len(searchedNotes)),
+			RecentNotes(searchedNotes, min(25, len(searchedNotes))),
 		),
 	)
 	return RenderWithTargetAndTheme(w, "AQUA", template)
