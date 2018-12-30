@@ -18,6 +18,9 @@ func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) 
 		Div(Atr,
 			A(Atr.Href("/admin/"), Str("View Other Notes")),
 		),
+		Div(Atr,
+			A(Atr.Href("/admin/scripting"), Str("Scripting")),
+		),
 		Form(Atr.Action("/").Method("GET"),
 			Label(Atr.For("q"),
 				Input(Atr.Type("text").Name("q").Value(searchTerms)),
@@ -29,6 +32,13 @@ func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) 
 	return RenderWithTargetAndTheme(w, "AQUA", template)
 }
 
+func InvalidScriptNameView(w io.Writer, appName, scriptName, message string) error {
+	var template = BasePage(appName,
+		H2(Atr, Str(message)),
+		Str(scriptName))
+
+	return RenderWithTargetAndTheme(w, "AQUA", template)
+}
 func InvalidIdView(w io.Writer, appName, message, invalidID string) error {
 	var template = BasePage(appName,
 		H2(Atr, Str("400: You sent me a goofy request")),

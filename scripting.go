@@ -9,14 +9,16 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 )
 
-func doLuaScript(code string) func(ctx templates.Context) {
+func doLuaScript(code string, r *http.Request) func(ctx templates.Context) {
 	l := lua.NewState()
 	lua.OpenLibraries(l)
 	goluago.Open(l)
 	RegisterDbFunctions(l)
+	RegisterRequestArgFunctions(l, r)
 
 	return func(ctx templates.Context) {
 		buf := &bytes.Buffer{}
@@ -44,7 +46,15 @@ func doLuaScript(code string) func(ctx templates.Context) {
 			templates.StrBr(err.Error())(ctx)
 			return
 		}
-		l.Call(0, lua.MultipleReturns)
+		err = l.ProtectedCall(0, lua.MultipleReturns, 0)
+		if err != nil {
+			templates.StrBr("Partial output: " + msg)(ctx)
+			templates.StrBr(buf.String())(ctx)
+			templates.StrBr("Error:")(ctx)
+			templates.StrBr(err.Error())(ctx)
+			return
+		}
+		// String up whatever leftover stuff wasn't flushed
 		templates.StrBr(buf.String())(ctx)
 	}
 }
@@ -72,6 +82,35 @@ func LuaRequireNoteScript(l *lua.State) int {
 
 func RegisterDbFunctions(l *lua.State) {
 	l.Register("search_notes", LuaDoSearch)
+}
+
+func RegisterRequestArgFunctions(l *lua.State, r *http.Request) {
+	l.Register("url_query", LuaUrlQuery(r))
+	l.Register("form_value", LuaFormValue(r))
+
+}
+func LuaFormValue(r *http.Request) func(*lua.State) int {
+	return func(l *lua.State) int {
+		argName, ok := l.ToString(1)
+		if !ok {
+			l.PushString("Expected a string for the query name argument!")
+			l.Error()
+		}
+		l.PushString(r.FormValue(argName))
+		return 1
+	}
+}
+
+func LuaUrlQuery(r *http.Request) func(*lua.State) int {
+	return func(l *lua.State) int {
+		argName, ok := l.ToString(1)
+		if !ok {
+			l.PushString("Expected a string for the query name argument!")
+			l.Error()
+		}
+		l.PushString(r.URL.Query().Get(argName))
+		return 1
+	}
 }
 
 func LuaClear(buf *bytes.Buffer) func(*lua.State) int {

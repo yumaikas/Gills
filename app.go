@@ -28,20 +28,25 @@ func Route(r chi.Router) {
 	r.Get("/admin/upload/list", ShowUploadNotes)
 
 	// Scripting stuffs
+	r.Get("/admin/scripting", ListLuaScripts)
 	r.Get("/admin/scripting/", ListLuaScripts)
 
-	// Run/Test new lua scripts
+	r.Get("/admin/scripts/new", NewLuaScriptForm)
 	r.Get("/admin/scripts/new/", NewLuaScriptForm)
-	r.Post("/admin/scripts/new/run", RunNewLuaScript)
+
+	r.Post("/admin/scripts/new/run", RunDraftLuaScript)
+
 	r.Post("/admin/scripts/new/", CreateLuaScript)
+	r.Post("/admin/scripts/new", CreateLuaScript)
 
 	// Edit scripts
 	r.Get("/admin/scripts/edit/{script-name}", EditLuaScript)
+	r.Post("/admin/scripts/save-and-run/{script-name}", SaveAndRunLuaScript)
 	r.Post("/admin/scripts/edit/{script-name}", SaveLuaScript)
 
 	// Run scripts that have been saved
-	r.Get("/admin/pages/s/{script-name}/*", RunLuaScript)
-	r.Post("/admin/pages/s/{script-name}/*", RunLuaPostScript)
+	r.Get("/admin/pages/s/{script-name}*", RunLuaScript)
+	r.Post("/admin/pages/s/{script-name}*", RunLuaPostScript)
 
 	r.Get("/admin/wild-test*", TestWildCard)
 }

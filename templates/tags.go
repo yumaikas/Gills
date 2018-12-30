@@ -8,6 +8,9 @@ import (
 func Br() func(Context) {
 	return WriteVoidTag("br", Atr)
 }
+func Hr() func(Context) {
+	return WriteVoidTag("hr", Atr)
+}
 
 func Div(attributes AttributeChain, inner ...func(Context)) func(Context) {
 	return WriteTag("div", attributes, inner...)
@@ -33,6 +36,10 @@ func H1(attributes AttributeChain, inner ...func(Context)) func(Context) {
 
 func H2(attributes AttributeChain, inner ...func(Context)) func(Context) {
 	return WriteTag("h2", attributes, inner...)
+}
+
+func H3(attributes AttributeChain, inner ...func(Context)) func(Context) {
+	return WriteTag("h3", attributes, inner...)
 }
 
 func Title(attributes AttributeChain, inner ...func(Context)) func(Context) {

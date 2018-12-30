@@ -77,16 +77,20 @@ func ListScripts() ([]Script, error) {
 	return retScripts, nil
 }
 
-func CreateScript(name, code string, isPage bool) error {
+func CreateScript(name, code string) error {
 	_, err := db.Exec(`
 		INSERT OR FAIL 
 		into Scripts(Name, Content, Created) 
-		values (?, ?, strftime('%s', 'now')`, name, code)
+		values (?, ?, strftime('%s', 'now'));`, name, code)
 	return err
 }
 
-func UpdateScriptName(currentName, newName string) error {
-	db.MustExec(`Update Scripts Set Name = ? where Name = ?`, newName, currentName)
+func RenameScript(currentName, newName string) error {
+	db.MustExec(
+		`Update Scripts Set Name = ?, Updated where Name = ?
+		Insert Into ScriptHistory (ScriptId, Name, Content, Created, Updated)
+		Select Id, Name, Content, Created, strftime('%s', 'now') from Scripts where Name = ?;
+		`, newName, currentName, currentName)
 	return nil
 }
 
@@ -94,16 +98,16 @@ func SaveScript(name, code string) error {
 	_, err := db.Exec(`
 		INSERT OR IGNORE
 		into Scripts(Name, Content, Updated) 
-		values (?, ?, strftime('%s', 'now');
+		values (?, ?, strftime('%s', 'now'));
 
 		Insert Into ScriptHistory (ScriptId, Name, Content, Created, Updated)
-		Select Id, Name, Content, Created, strftime('%s', 'now') from Scripts;
+		Select ScriptId, Name, Content, Created, strftime('%s', 'now') from Scripts where Name = ?;
 
 		Update Scripts
 		Set 
 		  Content = ?,
 		  Updated = strftime('%s', 'now')
-		where Name = ?
-		`, name, code, code, name)
+		where Name = ?;
+		`, name, code, name, code, name)
 	return err
 }

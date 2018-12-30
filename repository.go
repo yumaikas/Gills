@@ -195,7 +195,7 @@ func buildSchema(database *sqlx.DB) error {
 
 	Create Table If Not Exists Scripts (
 		ScriptID INTEGER PRIMARY KEY,
-		Name text UNIQUE -- The name of the script
+		Name text UNIQUE, -- The name of the script
 		Content text,
 		Created int, -- unix timestamp
 		Updated int, -- unix timestamp
@@ -214,7 +214,7 @@ func buildSchema(database *sqlx.DB) error {
 
 	Create Table If Not Exists NoteHistory (
 		Id INTEGER PRIMARY KEY,
-		NoteId integer,
+		NoteId int,
 		Content text,
 		Created int, -- unix timestamp
 		Updated int, -- unix timestamp
@@ -230,7 +230,7 @@ func buildSchema(database *sqlx.DB) error {
 		Deleted int -- unix timestamp
 	);
 
-	Create Unique Index If Not Exists UniqueKV ON StateKV(Key)
+	Create Unique Index If Not Exists UniqueKV ON StateKV(Key);
 	Create Index If Not Exists KVidx ON StateKV(Key, Content);`
 
 	_, err := database.Exec(schema)
