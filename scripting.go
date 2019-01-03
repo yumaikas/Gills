@@ -17,6 +17,7 @@ func doLuaScript(code string, r *http.Request) func(ctx templates.Context) {
 	l := lua.NewState()
 	lua.OpenLibraries(l)
 	goluago.Open(l)
+	die(CleanOSFunctions(l))
 	RegisterDbFunctions(l)
 	RegisterRequestArgFunctions(l, r)
 
@@ -80,6 +81,18 @@ func LuaRequireNoteScript(l *lua.State) int {
 	l.Call(0, lua.MultipleReturns)
 	return 0
 
+}
+
+func CleanOSFunctions(l *lua.State) error {
+	return lua.DoString(l, `
+		io = nil
+		os.execute = nil 
+		os.getenv = nil 
+		os.remove = nil 
+		os.rename = nil
+		os.tmpname = nil
+		os.exit = nil
+		`)
 }
 
 func RegisterDbFunctions(l *lua.State) {
