@@ -122,6 +122,12 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 				return atrChain
 			end
 
+			function InlineStr(content)
+				return function() 
+				    ctx.write(escapeHTML(content))
+				end
+			end
+
 			function Str(content)
 				return function() 
 					ctx.start_line()
