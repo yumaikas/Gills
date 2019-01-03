@@ -106,10 +106,15 @@ func ProcessUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	tag := r.FormValue("tag")
 	notes := r.FormValue("notes")
+	returnPageName := r.FormValue("retpage")
 
 	_, err = SaveNote(NoteForFileNames(fileNames, tag, notes))
 	die(err)
-	http.Redirect(w, r, "/admin/upload", 301)
+	if strings.HasPrefix(returnPageName, "/admin/pages/s/") {
+		http.Redirect(w, r, returnPageName, 301)
+	} else {
+		http.Redirect(w, r, "/admin/upload", 301)
+	}
 }
 
 func Search(w http.ResponseWriter, r *http.Request) {
