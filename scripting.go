@@ -272,6 +272,7 @@ func MapFromGoTime(t time.Time) map[string]interface{} {
 		"minute":     t.Minute(),
 		"second":     t.Second(),
 		"nanosecond": t.Nanosecond(),
+		"weekday":    int(t.Weekday()) + 1,
 		"unix":       t.Unix(),
 	}
 }
