@@ -78,6 +78,11 @@ func LuaRequireNoteScript(l *lua.State) int {
 		l.Error()
 	}
 	err = lua.LoadString(l, note.Content)
+	if err != nil {
+		msg, _ := l.ToString(l.Top())
+		l.PushString(msg)
+		l.Error()
+	}
 	l.Call(0, lua.MultipleReturns)
 	return 0
 
