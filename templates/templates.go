@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	lua "github.com/Shopify/go-lua"
 	"github.com/russross/blackfriday"
 	"html/template"
 	"io"
@@ -31,6 +32,177 @@ type Context struct {
 	indentCount int
 	w           io.Writer
 	themeName   string
+}
+
+func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
+	return func(l *lua.State) int {
+		err := lua.LoadString(l, `
+			local strings = require("goluago/strings")
+			local indentCount, writeFunc, escapeHTML, themeName = ...
+
+			local ctx = {}
+
+			function ctx.start_line() 
+				for i=1,indentCount,1 do
+					ctx.write("\t")
+				end
+			end
+
+			function ctx.end_line()
+				writeFunc("\n")
+			end
+
+			function ctx.write(str) 
+			    writeFunc(str)
+			end
+
+			function ctx.write_line(str) 
+			    writeFunc(str)
+			end
+
+			function ctx.write_tags(inner) 
+				indentCount = indentCount + 1
+				for i=1,#inner do
+				    inner[i]()
+				end
+				indentCount = indentCount - 1
+			end
+
+			function ctx.write_attributes(attributes) 
+				for i=1,#attributes do 
+					local attr = attributes[i]
+				    ctx.write(" "..attr.Key..'="')
+				    if attr.Trusted then
+				    	ctx.write(attr.Value)
+				    else
+				    	ctx.write(escapeHTML(attr.Value))
+				    end
+				    ctx.write('"')
+				end
+			end
+
+			function write_void_tag(tagname, attr)
+				return function() 
+					ctx.start_line()
+					ctx.write("<"..tagname)
+					ctx.write_attributes(attr)
+					ctx.write(">")
+					ctx.end_line()
+				end
+			end
+
+			function write_tag(tagname, attr, ...) 
+				local inner = {...}
+				return function()
+					ctx.start_line()
+					ctx.write("<"..tagname)
+					ctx.write_attributes(attr)
+					ctx.write(">")
+					ctx.end_line()
+					ctx.write_tags(inner)
+					ctx.write_line("</"..tagname..">")
+				end
+			end
+
+			local AttributeMT = {
+			   __index = function(t, k)
+			        return function(value)
+			        	table.insert(t, {Key = string.lower(k), Value = value, Trusted = false})
+			        	return t
+				    end
+			   end
+			}
+
+			function Atr() 
+				local atrChain = {}
+				atrChain.AddUnsafe = function(key, value) 
+				    table.insert(atrChain, {Key = string.lower(key), Value = value, Trusted = true})
+				end
+				setmetatable(atrChain, AttributeMT)
+				return atrChain
+			end
+
+			function Str(content)
+				return function() 
+					ctx.start_line()
+				    ctx.write(escapeHTML(content))
+				    ctx.end_line()
+				end
+			end
+
+			function StrBr(content)
+				return function()
+				    local lines = strings.split(strings.trim(content, " \r\n"), "\n")
+				    for i=1,#lines do
+						ctx.write(escapeHTML(lines[i].." "))
+				    end
+				end
+			end
+
+
+			local void_tags = {"br", "hr", "input"}
+
+			local normal_tags = {
+				"div", "span", "h1", "h2", "h3", "h4", 
+				"title", "a", "table", "td", "form", "label", 
+				"button", 
+			}
+
+			-- Add the above tags as functions to _ENV. 
+			-- This is mostly intended for pages that need to use 
+			-- the HTML renderer
+			for i=1,#void_tags do
+				local t = void_tags[i]
+				local fn_name = string.upper(string.sub(t, 1,1))..string.sub(t, 2)
+				_ENV[fn_name] = function(attributes, ...) 
+					return write_void_tag(t, attributes, ...)
+				end
+			end 
+			for i=1,#normal_tags do
+				local t = normal_tags[i]
+				local fn_name = string.upper(string.sub(t, 1,1))..string.sub(t, 2)
+				_ENV[fn_name] = function(attributes, ...) 
+					return write_tag(t, attributes, ...) 
+				end
+			end
+		`)
+		if err != nil {
+			str, _ := l.ToString(l.Top())
+			panic(str)
+		}
+		l.PushInteger(derivedFrom.indentCount)
+		l.PushGoFunction(func(l *lua.State) int {
+			str, ok := l.ToString(1)
+			if !ok {
+				l.PushString("Cannot convert argument for ctx.write to string!")
+				l.Error()
+			}
+			_, err := derivedFrom.w.Write([]byte(str))
+			if err != nil {
+				l.PushString("Error while writing output: " + err.Error())
+				l.Error()
+			}
+			return 0
+		})
+		l.PushGoFunction(func(l *lua.State) int {
+			str, ok := l.ToString(1)
+			if !ok {
+				l.PushString("Cannot convert argument for escapeHTML to string!")
+				l.Error()
+			}
+			buf := &bytes.Buffer{}
+			template.HTMLEscape(buf, []byte(str))
+			l.PushString(buf.String())
+			return 1
+		})
+		l.PushString(derivedFrom.themeName)
+		err = l.ProtectedCall(4, 0, 0)
+		if err != nil {
+			l.PushString(err.Error())
+			l.Error()
+		}
+		return 0
+	}
 }
 
 func RenderWithTargetAndTheme(w io.Writer, themeName string, template func(Context)) (err error) {

@@ -22,6 +22,8 @@ func doLuaScript(code string, r *http.Request) func(ctx templates.Context) {
 
 	return func(ctx templates.Context) {
 		buf := &bytes.Buffer{}
+		// Will panic if things fail to load
+		templates.GetLuaRenderingContext(ctx)(l)
 		l.Register("echo", LuaDoPrint(buf))
 		l.Register("echoln", LuaDoPrintln(buf))
 		l.Register("clear_buffer", LuaClear(buf))

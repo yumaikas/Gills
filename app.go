@@ -104,7 +104,10 @@ func ProcessUpload(w http.ResponseWriter, r *http.Request) {
 		die(err)
 		fileNames[i] = name
 	}
-	_, err = SaveNote(NoteForFileNames(fileNames))
+	tag := r.FormValue("tag")
+	notes := r.FormValue("notes")
+
+	_, err = SaveNote(NoteForFileNames(fileNames, tag, notes))
 	die(err)
 	http.Redirect(w, r, "/admin/upload", 301)
 }

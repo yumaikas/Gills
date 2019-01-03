@@ -28,16 +28,25 @@ func SaveUploadedFile(formFile io.Reader, extension string) (string, error) {
 	return randName, nil
 }
 
-func NoteForFileNames(names []string) Note {
+func NoteForFileNames(names []string, tag, notes string) Note {
 	var buf bytes.Buffer
+	if len(notes) > 0 {
+		buf.WriteString(notes)
+		buf.WriteString("\n")
+	}
 
 	for _, name := range names {
 		buf.WriteString("![Uploaded file](/admin/upload/")
 		buf.WriteString(name)
 		buf.WriteString(")\n\n")
 	}
-	buf.WriteString("@archive @upload-")
-	buf.WriteString(UploadUUID)
+	// If we have a category for this page, use that, otherwise, give it the default category
+	if len(tag) > 0 {
+		buf.WriteString(tag)
+	} else {
+		buf.WriteString("@archive @upload-")
+		buf.WriteString(UploadUUID)
+	}
 
 	return Note{Content: buf.String()}
 }
