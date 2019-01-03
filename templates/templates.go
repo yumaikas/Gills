@@ -38,7 +38,7 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 	return func(l *lua.State) int {
 		err := lua.LoadString(l, `
 			local strings = require("goluago/strings")
-			local indentCount, writeFunc, escapeHTML, themeName = ...
+			local indentCount, writeFunc, escapeHTML, mdownFunc, themeName = ...
 
 			local ctx = {}
 
@@ -139,6 +139,12 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 				end
 			end
 
+			function Markdown(content)
+			    return function() 
+			       ctx.write(mdownFunc(content))
+			    end
+			end 
+
 
 			local void_tags = {"br", "hr", "input"}
 
@@ -195,8 +201,9 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 			l.PushString(buf.String())
 			return 1
 		})
+		l.PushGoFunction(LuaMarkdown)
 		l.PushString(derivedFrom.themeName)
-		err = l.ProtectedCall(4, 0, 0)
+		err = l.ProtectedCall(5, 0, 0)
 		if err != nil {
 			l.PushString(err.Error())
 			l.Error()
@@ -261,24 +268,35 @@ func StrBr(content string) func(Context) {
 	}
 }
 
+var mdown_flags = 0 |
+	blackfriday.HTML_USE_SMARTYPANTS |
+	blackfriday.HTML_SMARTYPANTS_FRACTIONS |
+	blackfriday.HTML_FOOTNOTE_RETURN_LINKS
+
+var mdown_extensions = blackfriday.EXTENSION_TABLES |
+	blackfriday.EXTENSION_FOOTNOTES |
+	blackfriday.EXTENSION_FENCED_CODE |
+	blackfriday.EXTENSION_AUTOLINK |
+	blackfriday.EXTENSION_STRIKETHROUGH |
+	blackfriday.EXTENSION_HARD_LINE_BREAK |
+	0
+
+func LuaMarkdown(l *lua.State) int {
+	content, ok := l.ToString(1)
+	if !ok {
+		l.PushString("Cannot render markdown from non-string argument")
+		l.Error()
+	}
+	renderer := blackfriday.HtmlRenderer(mdown_flags, "", "")
+	output := blackfriday.Markdown([]byte(content), renderer, mdown_extensions)
+	l.PushString(string(output))
+	return 1
+}
+
 func Markdown(content string) func(Context) {
 	return func(ctx Context) {
-		flags := 0 |
-			blackfriday.HTML_USE_SMARTYPANTS |
-			blackfriday.HTML_SMARTYPANTS_FRACTIONS |
-			blackfriday.HTML_FOOTNOTE_RETURN_LINKS
-
-		extensions := blackfriday.EXTENSION_TABLES |
-			blackfriday.EXTENSION_FOOTNOTES |
-			blackfriday.EXTENSION_FENCED_CODE |
-			blackfriday.EXTENSION_AUTOLINK |
-			blackfriday.EXTENSION_STRIKETHROUGH |
-			blackfriday.EXTENSION_HARD_LINE_BREAK |
-			0
-
-		renderer := blackfriday.HtmlRenderer(flags, "", "")
-
-		output := blackfriday.Markdown([]byte(content), renderer, extensions)
+		renderer := blackfriday.HtmlRenderer(mdown_flags, "", "")
+		output := blackfriday.Markdown([]byte(content), renderer, mdown_extensions)
 		ctx.write(string(output))
 	}
 }
