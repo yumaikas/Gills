@@ -264,6 +264,12 @@ func Html(inner ...func(Context)) func(Context) {
 	}
 }
 
+func RawStr(content string) func (Context) {
+	return func (ctx Context) {
+		ctx.write(content)
+	}
+}
+
 func StrBr(content string) func(Context) {
 	return func(ctx Context) {
 		var buf bytes.Buffer

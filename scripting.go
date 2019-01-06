@@ -30,6 +30,7 @@ func doLuaScript(code string, r *http.Request) func(ctx templates.Context) {
 		l.Register("clear_buffer", LuaClear(buf))
 		l.Register("flush_markdown", LuaFlush(buf, ctx, templates.Markdown))
 		l.Register("flush_plain", LuaFlush(buf, ctx, templates.StrBr))
+		l.Register("flush_raw", LuaFlush(buf, ctx, templates.RawStr))
 		l.Register("script", LuaEmitJsScript(ctx))
 		l.Register("style", LuaEmitCSS(ctx))
 		l.Register("require_note", LuaRequireNoteScript)
