@@ -50,7 +50,7 @@ func renderScriptLinks(s Script, ctx Context) {
 
 func PageLink(s Script) func(Context) {
 	if s.IsPage() {
-		return A(Atr.Href("/admin/pages/s/"+s.Name), Str("View Page"))
+		return A(Atr.Href("/admin/s/"+s.Name), Str("View Page"))
 	}
 	return func(ctx Context) {}
 }

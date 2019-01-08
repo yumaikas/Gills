@@ -91,8 +91,8 @@ func RunLuaScript(w http.ResponseWriter, r *http.Request) {
 	// Ensure that the script is a page-script
 	name := chi.URLParam(r, "script-name")
 	script, err := GetScriptByName(name)
-	state, err := LoadState()
 	die(err)
+	state, err := LoadState()
 	die(err)
 	die(LuaExecutionOnlyView(w, state, doLuaScript(script.Content, r)))
 }

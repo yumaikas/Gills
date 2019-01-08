@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+    "database/sql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,9 +11,13 @@ import (
 )
 
 func Route(r chi.Router) {
-	r.Get("/", Search)
-	r.Get("/admin", Home)
-	r.Get("/admin/", Home)
+    // So, the homepage can either be a search page, or a lua-based page
+    // if a home.page is defined
+	r.Get("/", Home)
+	r.Get("/admin/search", Search)
+	r.Get("/admin/search/", Search)
+	r.Get("/admin", Desktop)
+	r.Get("/admin/", Desktop)
 	r.Post("/admin/search", DoSaveState)
 	r.Post("/admin/create", CreateNote)
 
@@ -45,8 +50,8 @@ func Route(r chi.Router) {
 	r.Post("/admin/scripts/edit/{script-name}", SaveLuaScript)
 
 	// Run scripts that have been saved
-	r.Get("/admin/pages/s/{script-name}*", RunLuaScript)
-	r.Post("/admin/pages/s/{script-name}*", RunLuaPostScript)
+	r.Get("/admin/s/{script-name}*", RunLuaScript)
+	r.Post("/admin/s/{script-name}*", RunLuaPostScript)
 
 	r.Get("/admin/wild-test*", TestWildCard)
 }
@@ -58,6 +63,18 @@ func TestWildCard(w http.ResponseWriter, r *http.Request) {
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
+    script, err := GetScriptByName("home.page")
+    if err == sql.ErrNoRows {
+        Search(w, r)
+        return
+    }
+    die(err)
+    state, err := LoadState()
+    die(err)
+    die(LuaExecutionOnlyView(w, state, doLuaScript(script.Content, r)))
+}
+
+func Desktop(w http.ResponseWriter, r *http.Request) {
 	appState, err := LoadState()
 	die(err)
 	searchTerms := appState.GetOr(recentSearchKey, "")
