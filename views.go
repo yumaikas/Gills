@@ -21,7 +21,7 @@ func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) 
 		Div(Atr,
 			A(Atr.Href("/admin/scripting"), Str("Scripting")),
 		),
-		Form(Atr.Action("/").Method("GET"),
+		Form(Atr.Action("/admin/search").Method("GET"),
 			Label(Atr.For("q"),
 				Input(Atr.Type("text").Name("q").Value(searchTerms)),
 			),
