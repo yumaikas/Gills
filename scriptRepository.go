@@ -88,7 +88,7 @@ func CreateScript(name, code string) error {
 func RenameScript(currentName, newName string) error {
 	db.MustExec(`
 		Insert Into ScriptHistory (ScriptId, Name, Content, Created, Updated)
-		Select Id, Name, Content, Created, strftime('%s', 'now') from Scripts where Name = ?;
+		Select ScriptId, Name, Content, Created, strftime('%s', 'now') from Scripts where Name = ?;
 		Update Scripts Set Name = ?, Updated where Name = ?;
 		`, currentName, newName, currentName)
 	return nil
