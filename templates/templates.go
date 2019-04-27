@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io"
 	"strings"
+	"sync"
 )
 
 // TODO: Come back to this if I find it works better "gopkg.in/russross/blackfriday.v2"
@@ -32,6 +33,27 @@ type Context struct {
 	indentCount int
 	w           io.Writer
 	themeName   string
+}
+
+var styleLoaderMux sync.Mutex
+
+var loaders = make([]func(string) (string, bool), 0)
+
+func AddStyleLoader(fn func(string) (string, bool)) {
+	styleLoaderMux.Lock()
+	loaders = append(loaders, fn)
+	styleLoaderMux.Unlock()
+}
+
+func GetStyle(name string) (string, bool) {
+	styleLoaderMux.Lock()
+	defer styleLoaderMux.Unlock()
+	for _, fn := range loaders {
+		if str, ok := fn(name); ok {
+			return str, ok
+		}
+	}
+	return "", false
 }
 
 func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
@@ -259,13 +281,14 @@ func Html(inner ...func(Context)) func(Context) {
 		ctx.writeLine("<!DOCTYPE html>")
 		ctx.writeLine("<html>")
 		ctx.writeLine("<meta charset=\"utf-8\">")
+		ctx.writeLine(`<meta name="viewport" content="width=device-width, initial-scale=1.0">`)
 		ctx.WriteTags(inner...)
 		ctx.writeLine("</html>")
 	}
 }
 
-func RawStr(content string) func (Context) {
-	return func (ctx Context) {
+func RawStr(content string) func(Context) {
+	return func(ctx Context) {
 		ctx.write(content)
 	}
 }
@@ -354,6 +377,7 @@ var baseStyle = WriteTag("style", Atr, func(ctx Context) {
             img {max-width: 85%;}
             `)
 	}
+	GetStyle(ctx.themeName)
 })
 
 func (ctx Context) writeAttributes(attributes AttributeChain) {
