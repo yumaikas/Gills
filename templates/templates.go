@@ -367,8 +367,9 @@ var baseStyle = WriteTag("style", Atr, func(ctx Context) {
             	background: #191e2a;
             	color: #21EF9F;
             }
+	    textarea[name=note-content] { width: 100%; }
             a { color: aqua; }
-            a:visited { color: darkcyan; }
+            a:visited { color: #1ad6d6; }
             .note-card {
             	border-top: solid 1px #21EF9F; 
 	        	margin-top: 5px;

@@ -103,6 +103,7 @@ func CleanOSFunctions(l *lua.State) error {
 
 func RegisterDbFunctions(l *lua.State) {
 	l.Register("search_notes", LuaDoSearch)
+	l.Register("note_for_id", LuaNoteForId)
 }
 
 func RegisterRequestArgFunctions(l *lua.State, r *http.Request) {
@@ -255,15 +256,31 @@ func LuaDoSearch(l *lua.State) int {
 	return 1
 }
 
+func LuaNoteForId(l *lua.State) int {
+	id := lua.CheckInteger(l, 1)
+	note, err := GetNoteBy(int64(id))
+	if err != nil {
+		l.PushString("An error happened fetching a note:"+ err.Error())
+		l.Error()
+	}
+	util.DeepPush(l, MapFromNote(note))
+	return 1
+
+}
+
+func MapFromNote(n Note) map[string]interface{} {
+	return map[string]interface{}{
+		"id":      n.Id,
+		"content": n.Content,
+		"created": MapFromGoTime(n.Created.Local()),
+		"updated": MapFromGoTime(n.Updated.Local()),
+	}
+}
+
 func MapFromNotes(notes []Note) []map[string]interface{} {
 	var mappedNotes = make([]map[string]interface{}, len(notes))
 	for idx, n := range notes {
-		mappedNotes[idx] = map[string]interface{}{
-			"id":      n.Id,
-			"content": n.Content,
-			"created": MapFromGoTime(n.Created.Local()),
-			"updated": MapFromGoTime(n.Updated.Local()),
-		}
+		mappedNotes[idx] = MapFromNote(n)
 	}
 
 	return mappedNotes
