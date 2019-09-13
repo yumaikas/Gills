@@ -2,7 +2,8 @@ package main
 
 import (
 	"io"
-	. "yumaikas/gills/templates"
+
+	. "gills/templates"
 )
 
 var uploadViewLayout = `

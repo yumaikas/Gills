@@ -5,11 +5,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/middleware"
 	"net/http"
 	"os"
-
 	"runtime/debug"
+
+	"github.com/go-chi/chi/middleware"
 )
 
 // Recoverer is a middleware that recovers from panics, logs the panic (and a

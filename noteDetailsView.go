@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
-	. "yumaikas/gills/templates"
+
+	. "gills/templates"
 )
 
 var NoteDetailsStyle = `

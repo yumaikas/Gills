@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	. "yumaikas/gills/templates"
+
+	. "gills/templates"
 )
 
 func SearchView(w io.Writer, appName, searchTerms string, searchedNotes []Note) error {

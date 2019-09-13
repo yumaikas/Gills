@@ -2,9 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"time"
 )
 
 type scriptDB struct {
@@ -20,14 +21,14 @@ type scriptDB struct {
 func GetScriptByName(name string) (Script, error) {
 	var s = &scriptDB{}
 	err := db.Get(s, `
-		Select 
+		Select
 		    ScriptID as Id,
 		    Name,
 		    Content,
 		    Created,
 		    Updated,
 		    Deleted
-		from Scripts 
+		from Scripts
 		where Name = ?
 		`, name)
 	if err != nil {
@@ -49,7 +50,7 @@ func GetScriptByName(name string) (Script, error) {
 func ListScripts() ([]Script, error) {
 	var scripts = &[]scriptDB{}
 	err := sqlx.Select(db, scripts,
-		`Select 
+		`Select
 		    ScriptID as Id,
 		    Name,
 		    Content,
@@ -79,8 +80,8 @@ func ListScripts() ([]Script, error) {
 
 func CreateScript(name, code string) error {
 	_, err := db.Exec(`
-		INSERT OR FAIL 
-		into Scripts(Name, Content, Created) 
+		INSERT OR FAIL
+		into Scripts(Name, Content, Created)
 		values (?, ?, strftime('%s', 'now'));`, name, code)
 	return err
 }
@@ -97,14 +98,14 @@ func RenameScript(currentName, newName string) error {
 func SaveScript(name, code string) error {
 	_, err := db.Exec(`
 		INSERT OR IGNORE
-		into Scripts(Name, Content, Updated) 
+		into Scripts(Name, Content, Updated)
 		values (?, ?, strftime('%s', 'now'));
 
 		Insert Into ScriptHistory (ScriptId, Name, Content, Created, Updated)
 		Select ScriptId, Name, Content, Created, strftime('%s', 'now') from Scripts where Name = ?;
 
 		Update Scripts
-		Set 
+		Set
 		  Content = ?,
 		  Updated = strftime('%s', 'now')
 		where Name = ?;

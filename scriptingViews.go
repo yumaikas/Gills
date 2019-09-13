@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
-	. "yumaikas/gills/templates"
+
+	. "gills/templates"
 )
 
 func ScriptListView(w io.Writer, scripts []Script, state AppState) error {

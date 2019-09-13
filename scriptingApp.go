@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/go-chi/chi"
 	"net/http"
 	"strings"
+
+	"github.com/go-chi/chi"
 )
 
 // List the lua scripts

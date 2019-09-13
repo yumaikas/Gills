@@ -1,16 +1,17 @@
 package main
 
 import (
-	lua "github.com/Shopify/go-lua"
-	"github.com/Shopify/goluago"
-	"github.com/Shopify/goluago/util"
-	"yumaikas/gills/templates"
-	// "github.com/go-chi/chi"
 	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	lua "github.com/Shopify/go-lua"
+	"github.com/Shopify/goluago"
+	"github.com/Shopify/goluago/util"
+
+	"gills/templates"
 )
 
 func doLuaScript(code string, r *http.Request) func(ctx templates.Context) {
@@ -92,9 +93,9 @@ func LuaRequireNoteScript(l *lua.State) int {
 func CleanOSFunctions(l *lua.State) error {
 	return lua.DoString(l, `
 		io = nil
-		os.execute = nil 
-		os.getenv = nil 
-		os.remove = nil 
+		os.execute = nil
+		os.getenv = nil
+		os.remove = nil
 		os.rename = nil
 		os.tmpname = nil
 		os.exit = nil
@@ -260,7 +261,7 @@ func LuaNoteForId(l *lua.State) int {
 	id := lua.CheckInteger(l, 1)
 	note, err := GetNoteBy(int64(id))
 	if err != nil {
-		l.PushString("An error happened fetching a note:"+ err.Error())
+		l.PushString("An error happened fetching a note:" + err.Error())
 		l.Error()
 	}
 	util.DeepPush(l, MapFromNote(note))

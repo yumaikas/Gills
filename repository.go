@@ -2,9 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"time"
 )
 
 type noteDB struct {
@@ -59,9 +60,9 @@ func queryNotes(query, searchTerms string) ([]Note, error) {
 
 func SearchUploadNotes(searchTerms string) ([]Note, error) {
 	return queryNotes(`
-		Select NoteId as Id, Content, Created, Updated 
-		from Notes 
-			where Content like '%' || ? || '%'  
+		Select NoteId as Id, Content, Created, Updated
+		from Notes
+			where Content like '%' || ? || '%'
 			AND Content like '%@upload-8afee0a6-9ec4-46c1-a530-89287f579300%'
 			AND Content not like '%--@script%'
 		order by Created DESC
@@ -71,20 +72,20 @@ func SearchUploadNotes(searchTerms string) ([]Note, error) {
 
 func SearchRecentNotes(searchTerms string) ([]Note, error) {
 	return queryNotes(`
-		Select NoteId as Id, Content, Created, Updated 
-		from Notes 
-			where Content like '%' || ? || '%'  
-			AND Content not like '%@archive%' 
+		Select NoteId as Id, Content, Created, Updated
+		from Notes
+			where Content like '%' || ? || '%'
+			AND Content not like '%@archive%'
 		order by Created DESC
 		`, searchTerms)
 }
 
 func SearchNotes(searchTerms string) ([]Note, error) {
 	return queryNotes(`
-		Select NoteId as Id, Content, Created, Updated 
-		from Notes 
-		where 
-			Content like '%' || ? || '%'  
+		Select NoteId as Id, Content, Created, Updated
+		from Notes
+		where
+			Content like '%' || ? || '%'
 			AND Content not like '%@archive%'
 		order by Created DESC
 		`, searchTerms)
@@ -146,7 +147,7 @@ func DeleteNote(id int64) error {
 	tx.MustExec(`
 		Insert into NoteHistory (NoteID, Content, Created, Deleted)
 		Select ?, Content, Created, strftime('%s', 'now')
-		from Notes where NoteID = ? 
+		from Notes where NoteID = ?
 		`, id, id)
 	tx.MustExec(`Delete from Notes where NoteId = ?`, id)
 	return tx.Commit()
@@ -158,16 +159,16 @@ func SaveNote(note Note) (int64, error) {
 	// >  If the table is initially empty, then a ROWID of 1 is used
 	if note.Id != 0 {
 		db.MustExec(`
-			Insert into NoteHistory 
+			Insert into NoteHistory
 				(NoteId, Content, Created, Updated)
 				Select ?, Content, Created, strftime('%s', 'now')
 				from Notes where NoteID = ?;
 
 				Update Notes
-				Set 
+				Set
 					Content = ?,
 					Updated = strftime('%s', 'now')
-				where NoteID = ? 
+				where NoteID = ?
 			`, note.Id, note.Id, note.Content, note.Id)
 		return note.Id, nil
 	} else {

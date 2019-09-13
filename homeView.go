@@ -2,7 +2,8 @@ package main
 
 import (
 	"io"
-	. "yumaikas/gills/templates"
+
+	. "gills/templates"
 )
 
 var homeLayout = `
@@ -26,7 +27,7 @@ var homeLayout = `
 
 	textarea, .note-card {
 		font-size: 9pt;
-	}	
+	}
 	.app-name {
 		margin-left: 30px;
 	}
@@ -46,12 +47,12 @@ var homeLayout = `
 	input[type=text] {
 		font-size: 24px;
 	}
-	
+
 	input[type=submit].inline-form {
 		margin-left: 5px;
 		padding: 5px 10px;
 	}
-	
+
 	input {
 		font-size: 22px;
 		margin-top: 20px;

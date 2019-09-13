@@ -2,12 +2,13 @@ package templates
 
 import (
 	"bytes"
-	lua "github.com/Shopify/go-lua"
-	"github.com/russross/blackfriday"
 	"html/template"
 	"io"
 	"strings"
 	"sync"
+
+	lua "github.com/Shopify/go-lua"
+	blackfriday "github.com/russross/blackfriday/v2"
 )
 
 // TODO: Come back to this if I find it works better "gopkg.in/russross/blackfriday.v2"
@@ -64,7 +65,7 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 
 			local ctx = {}
 
-			function ctx.start_line() 
+			function ctx.start_line()
 				for i=1,indentCount,1 do
 					ctx.write("\t")
 				end
@@ -74,15 +75,15 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 				writeFunc("\n")
 			end
 
-			function ctx.write(str) 
+			function ctx.write(str)
 			    writeFunc(str)
 			end
 
-			function ctx.write_line(str) 
+			function ctx.write_line(str)
 			    writeFunc(str)
 			end
 
-			function ctx.write_tags(inner) 
+			function ctx.write_tags(inner)
 				indentCount = indentCount + 1
 				for i=1,#inner do
 				    inner[i]()
@@ -90,8 +91,8 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 				indentCount = indentCount - 1
 			end
 
-			function ctx.write_attributes(attributes) 
-				for i=1,#attributes do 
+			function ctx.write_attributes(attributes)
+				for i=1,#attributes do
 					local attr = attributes[i]
 				    ctx.write(" "..attr.Key..'="')
 				    if attr.Trusted then
@@ -104,7 +105,7 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 			end
 
 			function write_void_tag(tagname, attr)
-				return function() 
+				return function()
 					ctx.start_line()
 					ctx.write("<"..tagname)
 					ctx.write_attributes(attr)
@@ -113,7 +114,7 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 				end
 			end
 
-			function write_tag(tagname, attr, ...) 
+			function write_tag(tagname, attr, ...)
 				local inner = {...}
 				return function()
 					ctx.start_line()
@@ -135,9 +136,9 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 			   end
 			}
 
-			function Atr() 
+			function Atr()
 				local atrChain = {}
-				atrChain.AddUnsafe = function(key, value) 
+				atrChain.AddUnsafe = function(key, value)
 				    table.insert(atrChain, {Key = string.lower(key), Value = value, Trusted = true})
 				end
 				setmetatable(atrChain, AttributeMT)
@@ -145,13 +146,13 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 			end
 
 			function InlineStr(content)
-				return function() 
+				return function()
 				    ctx.write(escapeHTML(content))
 				end
 			end
 
 			function Str(content)
-				return function() 
+				return function()
 					ctx.start_line()
 				    ctx.write(escapeHTML(content))
 				    ctx.end_line()
@@ -168,35 +169,35 @@ func GetLuaRenderingContext(derivedFrom Context) func(l *lua.State) int {
 			end
 
 			function Markdown(content)
-			    return function() 
+			    return function()
 			       ctx.write(mdownFunc(content))
 			    end
-			end 
+			end
 
 
 			local void_tags = {"br", "hr", "input"}
 
 			local normal_tags = {
-				"div", "span", "h1", "h2", "h3", "h4", 
-				"title", "a", "table", "td", "form", "label", 
-				"button", 
+				"div", "span", "h1", "h2", "h3", "h4",
+				"title", "a", "table", "td", "form", "label",
+				"button",
 			}
 
-			-- Add the above tags as functions to _ENV. 
-			-- This is mostly intended for pages that need to use 
+			-- Add the above tags as functions to _ENV.
+			-- This is mostly intended for pages that need to use
 			-- the HTML renderer
 			for i=1,#void_tags do
 				local t = void_tags[i]
 				local fn_name = string.upper(string.sub(t, 1,1))..string.sub(t, 2)
-				_ENV[fn_name] = function(attributes, ...) 
+				_ENV[fn_name] = function(attributes, ...)
 					return write_void_tag(t, attributes, ...)
 				end
-			end 
+			end
 			for i=1,#normal_tags do
 				local t = normal_tags[i]
 				local fn_name = string.upper(string.sub(t, 1,1))..string.sub(t, 2)
-				_ENV[fn_name] = function(attributes, ...) 
-					return write_tag(t, attributes, ...) 
+				_ENV[fn_name] = function(attributes, ...)
+					return write_tag(t, attributes, ...)
 				end
 			end
 		`)
@@ -304,17 +305,20 @@ func StrBr(content string) func(Context) {
 }
 
 var mdown_flags = 0 |
-	blackfriday.HTML_USE_SMARTYPANTS |
-	blackfriday.HTML_SMARTYPANTS_FRACTIONS |
-	blackfriday.HTML_FOOTNOTE_RETURN_LINKS
+	blackfriday.Smartypants |
+	blackfriday.SmartypantsFractions |
+	blackfriday.FootnoteReturnLinks
 
-var mdown_extensions = blackfriday.EXTENSION_TABLES |
-	blackfriday.EXTENSION_FOOTNOTES |
-	blackfriday.EXTENSION_FENCED_CODE |
-	blackfriday.EXTENSION_AUTOLINK |
-	blackfriday.EXTENSION_STRIKETHROUGH |
-	blackfriday.EXTENSION_HARD_LINE_BREAK |
-	0
+var mdown_extensions = 0 |
+	blackfriday.Tables |
+	blackfriday.Footnotes |
+	blackfriday.FencedCode |
+	blackfriday.Autolink |
+	blackfriday.Strikethrough |
+	blackfriday.HardLineBreak
+
+var mdown_renderer = blackfriday.NewHTMLRenderer(
+	blackfriday.HTMLRendererParameters{Flags: mdown_flags})
 
 func LuaMarkdown(l *lua.State) int {
 	content, ok := l.ToString(1)
@@ -322,16 +326,22 @@ func LuaMarkdown(l *lua.State) int {
 		l.PushString("Cannot render markdown from non-string argument")
 		l.Error()
 	}
-	renderer := blackfriday.HtmlRenderer(mdown_flags, "", "")
-	output := blackfriday.Markdown([]byte(content), renderer, mdown_extensions)
+	output := blackfriday.Run(
+		[]byte(content),
+		blackfriday.WithExtensions(mdown_extensions),
+		blackfriday.WithRenderer(mdown_renderer),
+	)
 	l.PushString(string(output))
 	return 1
 }
 
 func Markdown(content string) func(Context) {
 	return func(ctx Context) {
-		renderer := blackfriday.HtmlRenderer(mdown_flags, "", "")
-		output := blackfriday.Markdown([]byte(content), renderer, mdown_extensions)
+		output := blackfriday.Run(
+			[]byte(content),
+			blackfriday.WithExtensions(mdown_extensions),
+			blackfriday.WithRenderer(mdown_renderer),
+		)
 		ctx.write(string(output))
 	}
 }
@@ -371,7 +381,7 @@ var baseStyle = WriteTag("style", Atr, func(ctx Context) {
             a { color: aqua; }
             a:visited { color: #1ad6d6; }
             .note-card {
-            	border-top: solid 1px #21EF9F; 
+            	border-top: solid 1px #21EF9F;
 	        	margin-top: 5px;
 	        	padding-top: 5px;
             }

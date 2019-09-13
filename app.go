@@ -1,18 +1,19 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"github.com/go-chi/chi"
-    "database/sql"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi"
 )
 
 func Route(r chi.Router) {
-    // So, the homepage can either be a search page, or a lua-based page
-    // if a home.page is defined
+	// So, the homepage can either be a search page, or a lua-based page
+	// if a home.page is defined
 	r.Get("/", Home)
 	r.Get("/admin/search", Search)
 	r.Get("/admin/search/", Search)
@@ -63,15 +64,15 @@ func TestWildCard(w http.ResponseWriter, r *http.Request) {
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
-    script, err := GetScriptByName("home.page")
-    if err == sql.ErrNoRows {
-        Search(w, r)
-        return
-    }
-    die(err)
-    state, err := LoadState()
-    die(err)
-    die(LuaExecutionOnlyView(w, state, doLuaScript(script.Content, r)))
+	script, err := GetScriptByName("home.page")
+	if err == sql.ErrNoRows {
+		Search(w, r)
+		return
+	}
+	die(err)
+	state, err := LoadState()
+	die(err)
+	die(LuaExecutionOnlyView(w, state, doLuaScript(script.Content, r)))
 }
 
 func Desktop(w http.ResponseWriter, r *http.Request) {

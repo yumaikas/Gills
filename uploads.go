@@ -3,10 +3,11 @@ package main
 import (
 	"bytes"
 	"errors"
-	"gopkg.in/myesui/uuid.v1"
 	"io"
 	"os"
 	"path"
+
+	"gopkg.in/myesui/uuid.v1"
 )
 
 var pathDir string
