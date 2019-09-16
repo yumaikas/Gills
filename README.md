@@ -6,3 +6,5 @@ If you're going to expose this webapp to the internet, please put it behind some
 
 
 TODO: Fill this out with build instructions, better setups, etc
+
+TODO: Add a license
