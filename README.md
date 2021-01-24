@@ -1,10 +1,7 @@
 # Gills: The Tagged, Search-based journaling system
 
-TODO: contact info
+## Status
 
-If you're going to expose this webapp to the internet, please put it behind some sort of auth, or all of your everything will be exposed to the entire internet to see.
+This project is currently no longer under development by me, @yumaikas. 
 
-
-TODO: Fill this out with build instructions, better setups, etc
-
-TODO: Add a license
+If you're interested in how to build something that ties Lua, Go and scripting into a note-taking system, this might be of interest, but I don't have any future plans for it.
