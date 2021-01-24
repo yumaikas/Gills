@@ -34,16 +34,30 @@ func doLuaScript(code string, r *http.Request) func(ctx templates.Context) {
 		l.Register("flush_raw", LuaFlush(buf, ctx, templates.RawStr))
 		l.Register("script", LuaEmitJsScript(ctx))
 		l.Register("style", LuaEmitCSS(ctx))
-		l.Register("require_note", LuaRequireNoteScript)
+		//l.Register("require_note", LuaRequireNote)
 		// Emit a div with an ID as a JS mount-point for things like Vue.JS
 		l.Register("app_div", LuaEmitDiv(ctx))
 		// l.Register("write_tag", LuaWriteTag(ctx))
 		// l.Register("write_void_tag", LuaWriteTag(ctx))
 		// TODO: Build in
+
+		// This really just pushes our custom require searcher onto the
+		// package.searchers which are used when calling require.
+		l.Global("package")
+		l.Field(-1, "searchers")
+		l.Length(-1)
+		searcherLength, _ := l.ToInteger(-1)
+		searcherLength++
+		l.Pop(1)
+		l.PushInteger(searcherLength)
+		l.PushGoFunction(LuaRequireNote)
+		l.SetTable(-3)
+		l.Pop(2)
+
 		err := lua.LoadString(l, code)
 		msg, _ := l.ToString(l.Top())
 
-		// fmt.Println(l)
+		//fmt.Printf("%+v\n", l)
 		if err != nil {
 			templates.StrBr("Partial output: " + msg)(ctx)
 			templates.StrBr(buf.String())(ctx)
@@ -64,30 +78,32 @@ func doLuaScript(code string, r *http.Request) func(ctx templates.Context) {
 	}
 }
 
-func LuaRequireNoteScript(l *lua.State) int {
+func LuaRequireNote(l *lua.State) int {
 	if l.Top() < 1 {
-		l.PushString("require_note called without script name!")
-		l.Error()
+		l.PushString("require_note called without script name")
+		return 1
 	}
 	scriptName, ok := l.ToString(1)
 	if !ok {
-		l.PushString("require_note called with non-string script name!")
-		l.Error()
+		l.PushString("require_note called with non-string script name")
+		return 1
 	}
+
 	note, err := GetScriptByName(scriptName)
 	if err != nil {
 		l.PushString(err.Error())
-		l.Error()
+		return 1
 	}
+
 	err = lua.LoadString(l, note.Content)
 	if err != nil {
 		msg, _ := l.ToString(l.Top())
 		l.PushString(msg)
-		l.Error()
+		return 1
 	}
-	l.Call(0, lua.MultipleReturns)
-	return 0
 
+	l.PushString(fmt.Sprintf("Note %q", scriptName))
+	return 2
 }
 
 func CleanOSFunctions(l *lua.State) error {
